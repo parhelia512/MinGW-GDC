@@ -5,6 +5,7 @@ GDC_BRANCH="gdc-4.8"
 # Force a GDC Revision.  Empty uses head.
 GDC_VERSION="6296cfbe9756572e6d91e83e5d786ce5477fcb1b"
 
+set -e
 
 ### Build Code
 # Sanity test
@@ -31,20 +32,21 @@ if [ "$unzip" == "" ]; then
 	exit 1
 fi
 
+p7za=$(which 7za 2>/dev/null)
+if [ "$p7za" == "" ]; then
+	echo "7za not installed.  Please install with:"
+	echo "pacman -S p7zip"
+	exit 1
+fi
+
 root=$(pwd)
 pushd /crossdev/gdc-4.8/src
 
 # Download and install x86-64 build tools
-if [ ! -e "7za.exe" ]; then
-	if [ ! -e "7za920.zip" ]; then
-		wget http://downloads.sourceforge.net/sevenzip/7za920.zip
-	fi
-	unzip 7za920.zip 7za.exe
-fi
 
 if [ ! -d "/crossdev/mingw64" ]; then
 	if [ ! -e "x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z" ]; then
-		wget http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/sjlj/x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z/download
+		wget http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/sjlj/x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z/download -O x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z
 	fi
 	7za x -o/crossdev x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z
 fi
@@ -58,17 +60,17 @@ gcc -v
 mkdir -p /crossdev/gdc-4.8/release/bin
 
 if [ ! -e "libiconv-1.14-3-mingw32-dll.tar.lzma" ]; then
-	wget http://sourceforge.net/projects/mingw/files/MinGW/Base/libiconv/libiconv-1.14-3/libiconv-1.14-3-mingw32-dll.tar.lzma/download
+	wget http://sourceforge.net/projects/mingw/files/MinGW/Base/libiconv/libiconv-1.14-3/libiconv-1.14-3-mingw32-dll.tar.lzma/download -O libiconv-1.14-3-mingw32-dll.tar.lzma
 #	tar --lzma -xvf libiconv-1.14-3-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release
 fi
 
 if [ ! -e "gettext-0.18.3.1-1-mingw32-dll.tar.lzma" ]; then
-	wget http://sourceforge.net/projects/mingw/files/MinGW/Base/gettext/gettext-0.18.3.1-1/gettext-0.18.3.1-1-mingw32-dll.tar.lzma/download
+	wget http://sourceforge.net/projects/mingw/files/MinGW/Base/gettext/gettext-0.18.3.1-1/gettext-0.18.3.1-1-mingw32-dll.tar.lzma/download -O gettext-0.18.3.1-1-mingw32-dll.tar.lzma
 #	tar --lzma -xvf gettext-0.18.3.1-1-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release
 fi
 
 if [ ! -e "gcc-core-4.8.1-3-mingw32-dll.tar.lzma" ]; then
-	wget http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.1-3/gcc-core-4.8.1-3-mingw32-dll.tar.lzma
+	wget http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.1-3/gcc-core-4.8.1-3-mingw32-dll.tar.lzma -O gcc-core-4.8.1-3-mingw32-dll.tar.lzma
 #	tar --lzma -xvf gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release bin/libgcc_s_dw2-1.dll
 fi
 
@@ -144,7 +146,7 @@ fi
 # Compile MinGW64 runtime
 if [ ! -e mingw-w64-v3.0.0/build/.built ]; then
 	if [ ! -e "mingw-w64-v3.0.0.tar.bz2" ]; then
-		wget http://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2/download
+		wget http://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2/download -O mingw-w64-v3.0.0.tar.bz2
 	fi
 
 	if [ ! -d "mingw-w64-v3.0.0" ]; then
