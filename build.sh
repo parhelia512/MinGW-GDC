@@ -1,3 +1,4 @@
+#!/bin/bash
 # Configuration options
 
 # Which branch to build against
@@ -42,12 +43,21 @@ fi
 root=$(pwd)
 pushd /crossdev/gdc-4.8/src
 
+function lazy_download
+{
+  local file=$1
+  local url=$2
+
+	if [ ! -e "$file" ]; then
+		wget "$url" -O "$file"
+	fi
+}
+
 # Download and install x86-64 build tools
 
+lazy_download "x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z" "http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/sjlj/x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z/download"
+
 if [ ! -d "/crossdev/mingw64" ]; then
-	if [ ! -e "x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z" ]; then
-		wget http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/sjlj/x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z/download -O x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z
-	fi
 	7za x -o/crossdev x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z
 fi
 
@@ -59,20 +69,14 @@ gcc -v
 # Install some basic DLL dependencies
 mkdir -p /crossdev/gdc-4.8/release/bin
 
-if [ ! -e "libiconv-1.14-3-mingw32-dll.tar.lzma" ]; then
-	wget http://sourceforge.net/projects/mingw/files/MinGW/Base/libiconv/libiconv-1.14-3/libiconv-1.14-3-mingw32-dll.tar.lzma/download -O libiconv-1.14-3-mingw32-dll.tar.lzma
+lazy_download "libiconv-1.14-3-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/libiconv/libiconv-1.14-3/libiconv-1.14-3-mingw32-dll.tar.lzma/download"
 #	tar --lzma -xvf libiconv-1.14-3-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release
-fi
 
-if [ ! -e "gettext-0.18.3.1-1-mingw32-dll.tar.lzma" ]; then
-	wget http://sourceforge.net/projects/mingw/files/MinGW/Base/gettext/gettext-0.18.3.1-1/gettext-0.18.3.1-1-mingw32-dll.tar.lzma/download -O gettext-0.18.3.1-1-mingw32-dll.tar.lzma
+lazy_download "gettext-0.18.3.1-1-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/gettext/gettext-0.18.3.1-1/gettext-0.18.3.1-1-mingw32-dll.tar.lzma/download"
 #	tar --lzma -xvf gettext-0.18.3.1-1-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release
-fi
 
-if [ ! -e "gcc-core-4.8.1-3-mingw32-dll.tar.lzma" ]; then
-	wget http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.1-3/gcc-core-4.8.1-3-mingw32-dll.tar.lzma -O gcc-core-4.8.1-3-mingw32-dll.tar.lzma
+lazy_download "gcc-core-4.8.1-3-mingw32-dll.tar.lzma" "http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.1-3/gcc-core-4.8.1-3-mingw32-dll.tar.lzma"
 #	tar --lzma -xvf gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release bin/libgcc_s_dw2-1.dll
-fi
 
 # Extracts archive and converts to git repo.
 # If git repo exists, resets
@@ -108,10 +112,10 @@ set -e
 
 # Compile binutils
 mkgit binutils-2.23.2.tar.gz binutils-2.23.2
+
 if [ ! -e binutils-2.23.2/build/.built ]; then
-	if [ ! -e "binutils-2.23.2.tar.gz" ]; then
-		wget http://ftp.gnu.org/gnu/binutils/binutils-2.23.2.tar.gz
-	fi
+
+  lazy_download "binutils-2.23.2.tar.gz" "http://ftp.gnu.org/gnu/binutils/binutils-2.23.2.tar.gz"
 
 	#mkgit binutils-2.23.2.tar.gz binutils-2.23.2
 	if [ ! -d "binutils-2.23.2" ]; then
@@ -145,9 +149,8 @@ fi
 
 # Compile MinGW64 runtime
 if [ ! -e mingw-w64-v3.0.0/build/.built ]; then
-	if [ ! -e "mingw-w64-v3.0.0.tar.bz2" ]; then
-		wget http://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2/download -O mingw-w64-v3.0.0.tar.bz2
-	fi
+
+  lazy_download "mingw-w64-v3.0.0.tar.bz2" "http://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2/download"
 
 	if [ ! -d "mingw-w64-v3.0.0" ]; then
 		tar -xvjf mingw-w64-v3.0.0.tar.bz2
@@ -178,9 +181,8 @@ fi
 
 # Compile GMP
 if [ ! -e gmp-4.3.2/build/.built ]; then
-	if [ ! -e "gmp-4.3.2.tar.bz2" ]; then
-		wget http://ftp.gnu.org/gnu/gmp/gmp-4.3.2.tar.bz2
-	fi
+
+  lazy_download "gmp-4.3.2.tar.bz2" "http://ftp.gnu.org/gnu/gmp/gmp-4.3.2.tar.bz2"
 
 	if [ ! -d "gmp-4.3.2" ]; then
 		tar -xvjf gmp-4.3.2.tar.bz2
@@ -228,9 +230,8 @@ fi
 
 # Compile MPFR
 if [ ! -e mpfr-3.1.1/build/.built ]; then
-	if [ ! -e "mpfr-3.1.1.tar.bz2" ]; then
-		wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.1.tar.bz2
-	fi
+
+  lazy_download "mpfr-3.1.1.tar.bz2" "http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.1.tar.bz2"
 
 	if [ ! -d "mpfr-3.1.1" ]; then
 		tar -xvjf mpfr-3.1.1.tar.bz2
@@ -280,9 +281,8 @@ fi
 
 # Compile MPC
 if [ ! -e mpc-1.0.1/build/.built ]; then
-	if [ ! -e "mpc-1.0.1.tar.gz" ]; then
-		wget http://ftp.gnu.org/gnu/mpc/mpc-1.0.1.tar.gz
-	fi
+
+  lazy_download "mpc-1.0.1.tar.gz" http://ftp.gnu.org/gnu/mpc/mpc-1.0.1.tar.gz
 
 	if [ ! -d "mpc-1.0.1" ]; then
 		tar -xvzf mpc-1.0.1.tar.gz
@@ -331,9 +331,8 @@ fi
 
 # Compile ISL
 if [ ! -e isl-0.11.1/build/.built ]; then
-	if [ ! -e "isl-0.11.1.tar.bz2" ]; then
-		wget ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-0.11.1.tar.bz2
-	fi
+
+  lazy_download "isl-0.11.1.tar.bz2" "ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-0.11.1.tar.bz2"
 
 	#mkgit isl-0.11.1.tar.bz2 isl-0.11.1
 	if [ ! -d "isl-0.11.1" ]; then
@@ -380,9 +379,8 @@ fi
 
 # Compile CLOOG
 if [ ! -e cloog-0.18.0/build/.built ]; then
-	if [ ! -e "cloog-0.18.0.tar.gz" ]; then
-	wget ftp://gcc.gnu.org/pub/gcc/infrastructure/cloog-0.18.0.tar.gz
-	fi
+
+  lazy_download "cloog-0.18.0.tar.gz" "ftp://gcc.gnu.org/pub/gcc/infrastructure/cloog-0.18.0.tar.gz"
 
 	#mkgit cloog-0.18.0.tar.gz cloog-0.18.0
 	if [ ! -d "cloog-0.18.0" ]; then
@@ -469,9 +467,8 @@ cp -Rp $GCC_PREFIX/x86_64-w64-mingw32/bin/*.dll $GCC_PREFIX/bin
 
 # Setup GDC and compile
 function build_gdc {
-	if [ ! -e "gcc-4.8.1.tar.bz2" ]; then
-		wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.1/gcc-4.8.1.tar.bz2
-	fi
+
+  lazy_download "gcc-4.8.1.tar.bz2" "http://ftp.gnu.org/gnu/gcc/gcc-4.8.1/gcc-4.8.1.tar.bz2"
 
 	# Extract and configure a git repo to allow fast restoration for future builds.
 	# mkgit gcc-4.8.1.tar.bz2 gcc-4.8.1
