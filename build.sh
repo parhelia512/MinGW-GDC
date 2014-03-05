@@ -225,6 +225,7 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
 	touch .built
 	popd
 fi
+
 # Compile MPFR
 if [ ! -e mpfr-3.1.1/build/.built ]; then
 	if [ ! -e "mpfr-3.1.1.tar.bz2" ]; then
@@ -250,27 +251,30 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	fi
 
 	pushd mpfr-3.1.1
+
 	# Make 32
 	mkdir -p build/32
-	cd build/32
+	pushd build/32
 	#export PATH="$(PATH):$(GMP_STAGE)/32/bin"
 	../../configure --prefix=/crossdev/gdc-4.8/mpfr-3.1.1/32 \
 	  --build=x86_64-w64-mingw32 --disable-static --enable-shared \
 	  CFLAGS="-O2 -m32 -I/crossdev/gdc-4.8/gmp-4.3.2/32/include" \
 	  LDFLAGS="-m32 -s -L/crossdev/gdc-4.8/gmp-4.3.2/32/lib"
 	make && make install
-	cd ../..
+  popd
+
 	# Make 64
 	mkdir -p build/64
-	cd build/64
+	pushd build/64
 	#export PATH="$(PATH):$(GMP_STAGE)/64/bin"
 	../../configure --prefix=/crossdev/gdc-4.8/mpfr-3.1.1/64 \
 	  --build=x86_64-w64-mingw32 --disable-static --enable-shared \
 	  CFLAGS="-O2 -I/crossdev/gdc-4.8/gmp-4.3.2/64/include" \
 	  LDFLAGS="-s -L/crossdev/gdc-4.8/gmp-4.3.2/64/lib"
 	make && make install
-	cd ..
-	touch .built
+  popd
+
+	touch build/.built
 	popd
 fi
 
