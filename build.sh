@@ -5,7 +5,7 @@ GDC_BRANCH="gdc-4.8"
 # Force a GDC Revision.  Empty uses head.
 GDC_VERSION="6296cfbe9756572e6d91e83e5d786ce5477fcb1b"
 
-	
+
 ### Build Code
 # Sanity test
 DRIVE=$(pwd -W | cut -c 1)
@@ -41,12 +41,12 @@ if [ ! -e "7za.exe" ]; then
 	fi
 	unzip 7za920.zip 7za.exe
 fi
-	
+
 if [ ! -d "/crossdev/mingw64" ]; then
 	if [ ! -e "x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z" ]; then
 		wget http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/sjlj/x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z/download
 	fi
-	7za x -o/crossdev x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z 
+	7za x -o/crossdev x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z
 fi
 
 export PATH=/crossdev/mingw64/bin:$PATH
@@ -69,10 +69,10 @@ fi
 
 if [ ! -e "gcc-core-4.8.1-3-mingw32-dll.tar.lzma" ]; then
 	wget http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.1-3/gcc-core-4.8.1-3-mingw32-dll.tar.lzma
-#	tar --lzma -xvf gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release bin/libgcc_s_dw2-1.dll 
+#	tar --lzma -xvf gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release bin/libgcc_s_dw2-1.dll
 fi
 
-# Extracts archive and converts to git repo. 
+# Extracts archive and converts to git repo.
 # If git repo exists, resets
 # $1 - archive
 # $2 - path, for now, must equal what the archive extracts to
@@ -84,7 +84,7 @@ function mkgit {
 		switch $ext
 		tar -xvjf $1
 		cd $2
-		
+
 		# prune unnecessary folders.
 		git init
 		git config user.email "nobody@localhost"
@@ -96,9 +96,9 @@ function mkgit {
 	else
 		cd $2
 		git reset --hard
-		git clean -f	
-		cd ..	
-	fi	
+		git clean -f
+		cd ..
+	fi
 }
 
 # From this point forward, always exit on error
@@ -110,7 +110,7 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
 	if [ ! -e "binutils-2.23.2.tar.gz" ]; then
 		wget http://ftp.gnu.org/gnu/binutils/binutils-2.23.2.tar.gz
 	fi
-	
+
 	#mkgit binutils-2.23.2.tar.gz binutils-2.23.2
 	if [ ! -d "binutils-2.23.2" ]; then
 		tar -xvzf binutils-2.23.2.tar.gz
@@ -126,9 +126,9 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
 	else
 		cd binutils-2.23.2
 		git reset --hard
-		git clean -f	
+		git clean -f
 		cd ..
-	fi	
+	fi
 	pushd binutils-2.23.2
 	patch -p1 < $root/patches/mingw-tls-binutils-2.23.1.patch
 	mkdir -p build
@@ -138,7 +138,7 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
 	  CFLAGS="-O2 -m32" LDFLAGS="-s -m32"
 	make && make install
 	touch .built
-	popd 
+	popd
 fi
 
 # Compile MinGW64 runtime
@@ -161,9 +161,9 @@ if [ ! -e mingw-w64-v3.0.0/build/.built ]; then
 	else
 		cd mingw-w64-v3.0.0
 		git reset --hard
-		git clean -f	
+		git clean -f
 		cd ..
-	fi		
+	fi
 	pushd mingw-w64-v3.0.0
 	mkdir -p build
 	cd build
@@ -171,7 +171,7 @@ if [ ! -e mingw-w64-v3.0.0/build/.built ]; then
 	  --enable-lib32 --enable-sdk=all
 	make && make install
 	touch .built
-	popd 
+	popd
 fi
 
 # Compile GMP
@@ -179,7 +179,7 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
 	if [ ! -e "gmp-4.3.2.tar.bz2" ]; then
 		wget http://ftp.gnu.org/gnu/gmp/gmp-4.3.2.tar.bz2
 	fi
-	
+
 	if [ ! -d "gmp-4.3.2" ]; then
 		tar -xvjf gmp-4.3.2.tar.bz2
 		cd gmp-4.3.2
@@ -194,9 +194,9 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
 	else
 		cd gmp-4.3.2
 		git reset --hard
-		git clean -f	
+		git clean -f
 		cd ..
-	fi			
+	fi
 
 	pushd gmp-4.3.2
 	patch -p1 < $root/patches/gmp-4.3.2-w64.patch
@@ -228,7 +228,7 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	if [ ! -e "mpfr-3.1.1.tar.bz2" ]; then
 		wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.1.tar.bz2
 	fi
-	
+
 	if [ ! -d "mpfr-3.1.1" ]; then
 		tar -xvjf mpfr-3.1.1.tar.bz2
 		cd mpfr-3.1.1
@@ -243,10 +243,10 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	else
 		cd mpfr-3.1.1
 		git reset --hard
-		git clean -f	
-		cd ..	
+		git clean -f
+		cd ..
 	fi
-	
+
 	pushd mpfr-3.1.1
 	# Make 32
 	mkdir -p build/32
@@ -277,7 +277,7 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 	if [ ! -e "mpc-1.0.1.tar.gz" ]; then
 		wget http://ftp.gnu.org/gnu/mpc/mpc-1.0.1.tar.gz
 	fi
-	
+
 	if [ ! -d "mpc-1.0.1" ]; then
 		tar -xvzf mpc-1.0.1.tar.gz
 		cd mpc-1.0.1
@@ -292,11 +292,11 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 	else
 		cd mpc-1.0.1
 		git reset --hard
-		git clean -f	
-		cd ..	
-	fi	
+		git clean -f
+		cd ..
+	fi
 
-	
+
 	pushd mpc-1.0.1
 	# Make 32
 	mkdir -p build/32
@@ -318,7 +318,7 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 	  CFLAGS="-O2" LDFLAGS="-s"
 	  make && make install
 	cd ..
-	
+
 	touch .built
 	popd
 fi
@@ -328,12 +328,12 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 	if [ ! -e "isl-0.11.1.tar.bz2" ]; then
 		wget ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-0.11.1.tar.bz2
 	fi
-	
+
 	#mkgit isl-0.11.1.tar.bz2 isl-0.11.1
 	if [ ! -d "isl-0.11.1" ]; then
 		tar -xvjf isl-0.11.1.tar.bz2
 		cd isl-0.11.1
-		
+
 		# prune unnecessary folders.
 		git init
 		git config user.email "nobody@localhost"
@@ -345,9 +345,9 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 	else
 		cd isl-0.11.1
 		git reset --hard
-		git clean -f	
-		cd ..	
-	fi	
+		git clean -f
+		cd ..
+	fi
 
 	pushd isl-0.11.1
 	mkdir -p build/32
@@ -382,7 +382,7 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	if [ ! -d "cloog-0.18.0" ]; then
 		tar -xvzf cloog-0.18.0.tar.gz
 		cd cloog-0.18.0
-		
+
 		# prune unnecessary folders.
 		git init
 		git config user.email "nobody@localhost"
@@ -394,10 +394,10 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	else
 		cd cloog-0.18.0
 		git reset --hard
-		git clean -f	
-		cd ..	
-	fi	
-	
+		git clean -f
+		cd ..
+	fi
+
 	pushd cloog-0.18.0
 	# Build 32
 	mkdir -p build/32
@@ -464,7 +464,7 @@ cp -Rp $GCC_PREFIX/x86_64-w64-mingw32/bin/*.dll $GCC_PREFIX/bin
 # Setup GDC and compile
 function build_gdc {
 	if [ ! -e "gcc-4.8.1.tar.bz2" ]; then
-		wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.1/gcc-4.8.1.tar.bz2	
+		wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.1/gcc-4.8.1.tar.bz2
 	fi
 
 	# Extract and configure a git repo to allow fast restoration for future builds.
@@ -484,7 +484,7 @@ function build_gdc {
 	else
 		cd gcc-4.8.1
 		git reset --hard mingw_build
-		git clean -f -d	
+		git clean -f -d
 		cd ..
 	fi
 	# Clone and configure GDC
@@ -492,18 +492,18 @@ function build_gdc {
 		git clone https://github.com/D-Programming-GDC/GDC.git -b $GDC_BRANCH
 	else
 		cd GDC
-		git fetch 
+		git fetch
 		git reset --hard origin/$GDC_BRANCH
 		git clean -f -d
 		cd ..
 	fi
-	
+
 	pushd GDC
-	
+
 	if [ "$GDC_VERSION" != "" ]; then
 		git checkout $GDC_VERSION
 	fi
-	
+
 	#patch -p1 < $root/patches/mingw-gdc.patch
 	#patch -p1 < $root/patches/mingw-gdc-remove-main-from-dmain2.patch
 	# Should use git am
@@ -516,7 +516,7 @@ function build_gdc {
 
 	pushd gcc-4.8.1
 	patch -p1 < $root/patches/mingw-tls-gcc-4.8.patch
-	
+
 	# Should use git am
 	for patch in $(find $root/patches/gcc -type f ); do
 		echo "Patching $patch"
@@ -526,7 +526,7 @@ function build_gdc {
 	# Build GCC
 	mkdir -p build
 	cd build
-	
+
 	# Must build GCC using patched mingwrt
 	export LPATH="$GCC_PREFIX/lib;$GCC_PREFIX/x86_64-w64-mingw32/lib"
 	export CPATH="$GCC_PREFIX/include;$GCC_PREFIX/x86_64-w64-mingw32/include"
@@ -564,7 +564,7 @@ popd
 # Run unitests via check-d
 # Verify gdmd exists.
 # test commands need to avoid exit on error
-echo -n "Checking for gdmd.exe..." 
+echo -n "Checking for gdmd.exe..."
 gdmd=$(which gdmd.exe 2>/dev/null)
 if [ ! "$gdmd" ]; then
 	echo "Unable to run DMD testsuite. gdmd.exe failed to compile"
