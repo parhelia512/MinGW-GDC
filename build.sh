@@ -8,16 +8,15 @@ GDC_VERSION="6296cfbe9756572e6d91e83e5d786ce5477fcb1b"
 
 set -e
 
-### Build Code
-# Sanity test
-DRIVE=$(pwd -W | cut -c 1)
-mkdir -p /$DRIVE/crossdev/gdc-4.8/src
-if [ ! -d /crossdev/gdc-4.8 ]; then
-	echo "Santity test failed. /$DRIVE/crossdev does not map to /crossdev"
-	echo "Please ensure a mapping to crossdev exists in /etc/fstab"
-	echo "/crossdev must exist on the same drive this script is executed from"
-	exit 1
+CROSSDEV=$1
+
+if [ -z "$CROSSDEV" ] ; then
+  CROSSDEV=/crossdev
 fi
+
+echo "Building in $CROSSDEV"
+
+mkdir -p $CROSSDEV/gdc-4.8/src
 
 function isMissing
 {
@@ -32,23 +31,29 @@ function isMissing
 if isMissing "wget"; then
 	echo "wget not installed.  Please install with:"
 	echo "mingw-get install msys-wget"
+  echo "or"
+	echo "apt-get install wget"
 	exit 1
 fi
 
 if isMissing "unzip"; then
 	echo "unzip not installed.  Please install with:"
 	echo "mingw-get install msys-unzip"
+  echo "or"
+	echo "apt-get install unzip"
 	exit 1
 fi
 
 if isMissing "7za" ; then
 	echo "7za not installed.  Please install with:"
 	echo "pacman -S p7zip"
+  echo "or"
+	echo "apt-get install p7zip-full"
 	exit 1
 fi
 
 root=$(pwd)
-pushd /crossdev/gdc-4.8/src
+pushd $CROSSDEV/gdc-4.8/src
 
 function lazy_download
 {
@@ -64,26 +69,26 @@ function lazy_download
 
 lazy_download "x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z" "http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/sjlj/x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z/download"
 
-if [ ! -d "/crossdev/mingw64" ]; then
-	7za x -o/crossdev x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z
+if [ ! -d "$CROSSDEV/mingw64" ]; then
+	7za x -o$CROSSDEV x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z
 fi
 
-export PATH=/crossdev/mingw64/bin:$PATH
+export PATH=$CROSSDEV/mingw64/bin:$PATH
 # Configure x86-64 build environment
 gcc -v
 
 
 # Install some basic DLL dependencies
-mkdir -p /crossdev/gdc-4.8/release/bin
+mkdir -p $CROSSDEV/gdc-4.8/release/bin
 
 lazy_download "libiconv-1.14-3-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/libiconv/libiconv-1.14-3/libiconv-1.14-3-mingw32-dll.tar.lzma/download"
-#	tar --lzma -xvf libiconv-1.14-3-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release
+#	tar --lzma -xvf libiconv-1.14-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
 
 lazy_download "gettext-0.18.3.1-1-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/gettext/gettext-0.18.3.1-1/gettext-0.18.3.1-1-mingw32-dll.tar.lzma/download"
-#	tar --lzma -xvf gettext-0.18.3.1-1-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release
+#	tar --lzma -xvf gettext-0.18.3.1-1-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
 
 lazy_download "gcc-core-4.8.1-3-mingw32-dll.tar.lzma" "http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.1-3/gcc-core-4.8.1-3-mingw32-dll.tar.lzma"
-#	tar --lzma -xvf gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C /crossdev/gdc-4.8/release bin/libgcc_s_dw2-1.dll
+#	tar --lzma -xvf gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release bin/libgcc_s_dw2-1.dll
 
 # Extracts archive and converts to git repo.
 # If git repo exists, resets
@@ -146,7 +151,7 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
 	patch -p1 < $root/patches/mingw-tls-binutils-2.23.1.patch
 	mkdir -p build
 	cd build
-	../configure --prefix=/crossdev/gdc-4.8/release --build=x86_64-w64-mingw32 \
+	../configure --prefix=$CROSSDEV/gdc-4.8/release --build=x86_64-w64-mingw32 \
 	  --enable-targets=x86_64-w64-mingw32,i686-w64-mingw32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-s -m32"
 	make && make install
@@ -179,7 +184,7 @@ if [ ! -e mingw-w64-v3.0.0/build/.built ]; then
 	pushd mingw-w64-v3.0.0
 	mkdir -p build
 	cd build
-	../configure --prefix=/crossdev/gdc-4.8/release --build=x86_64-w64-mingw32 \
+	../configure --prefix=$CROSSDEV/gdc-4.8/release --build=x86_64-w64-mingw32 \
 	  --enable-lib32 --enable-sdk=all
 	make && make install
 	touch .built
@@ -215,7 +220,7 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
 	# Make 32
 	mkdir -p build/32
 	cd build/32
-	../../configure --prefix=/crossdev/gdc-4.8/gmp-4.3.2/32 \
+	../../configure --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  --build=x86_64-w64-mingw32 --enable-cxx --disable-static --enable-shared \
 	  LD="ld.exe -m i386pe" CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" \
 	  LDFLAGS="-m32 -s" ABI=32
@@ -225,10 +230,10 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
 	# Make 64
 	mkdir -p build/64
 	cd build/64
-	../../configure --prefix=/crossdev/gdc-4.8/gmp-4.3.2/64 \
+	../../configure --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  --build=x86_64-w64-mingw32 --enable-cxx --disable-static --enable-shared \
 	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s" ABI=64 \
-	  NM=/crossdev/mingw64/bin/nm
+	  NM=$CROSSDEV/mingw64/bin/nm
 	make && make install
 	cd ..
 	touch .built
@@ -264,10 +269,10 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	mkdir -p build/32
 	pushd build/32
 	#export PATH="$(PATH):$(GMP_STAGE)/32/bin"
-	../../configure --prefix=/crossdev/gdc-4.8/mpfr-3.1.1/32 \
+	../../configure --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/32 \
 	  --build=x86_64-w64-mingw32 --disable-static --enable-shared \
-	  CFLAGS="-O2 -m32 -I/crossdev/gdc-4.8/gmp-4.3.2/32/include" \
-	  LDFLAGS="-m32 -s -L/crossdev/gdc-4.8/gmp-4.3.2/32/lib"
+	  CFLAGS="-O2 -m32 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/32/include" \
+	  LDFLAGS="-m32 -s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/32/lib"
 	make && make install
   popd
 
@@ -275,10 +280,10 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	mkdir -p build/64
 	pushd build/64
 	#export PATH="$(PATH):$(GMP_STAGE)/64/bin"
-	../../configure --prefix=/crossdev/gdc-4.8/mpfr-3.1.1/64 \
+	../../configure --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
 	  --build=x86_64-w64-mingw32 --disable-static --enable-shared \
-	  CFLAGS="-O2 -I/crossdev/gdc-4.8/gmp-4.3.2/64/include" \
-	  LDFLAGS="-s -L/crossdev/gdc-4.8/gmp-4.3.2/64/lib"
+	  CFLAGS="-O2 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/64/include" \
+	  LDFLAGS="-s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/64/lib"
 	make && make install
   popd
 
@@ -314,20 +319,20 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 	# Make 32
 	mkdir -p build/32
 	cd build/32
-	../../configure --prefix=/crossdev/gdc-4.8/mpc-1.0.1/32 \
+	../../configure --prefix=$CROSSDEV/gdc-4.8/mpc-1.0.1/32 \
 	  --build=x86_64-w64-mingw32 --disable-static --enable-shared \
-	  --with-gmp=/crossdev/gdc-4.8/gmp-4.3.2/32 \
-	  --with-mpfr=/crossdev/gdc-4.8/mpfr-3.1.1/32 \
+	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
+	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
 	make && make install
 	cd ../..
 	# Make 64
 	mkdir -p build/64
 	cd build/64
-	../../configure --prefix=/crossdev/gdc-4.8/mpc-1.0.1/64 \
+	../../configure --prefix=$CROSSDEV/gdc-4.8/mpc-1.0.1/64 \
 	  --build=x86_64-w64-mingw32 --disable-static --enable-shared \
-	  --with-gmp=/crossdev/gdc-4.8/gmp-4.3.2/64 \
-	  --with-mpfr=/crossdev/gdc-4.8/mpfr-3.1.1/64 \
+	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
 	  CFLAGS="-O2" LDFLAGS="-s"
 	  make && make install
 	cd ..
@@ -364,18 +369,18 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 	pushd isl-0.11.1
 	mkdir -p build/32
 	cd build/32
-	../../configure --prefix=/crossdev/gdc-4.8/isl-0.11.1/32 \
+	../../configure --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/32 \
 	  --build=x86_64-w64-mingw32 --enable-shared \
-	  --with-gmp-prefix=/crossdev/gdc-4.8/gmp-4.3.2/32 \
+	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
 	make && make install
 	cd ../..
 	# Make 64
 	mkdir -p build/64
 	cd build/64
-	../../configure --prefix=/crossdev/gdc-4.8/isl-0.11.1/64 \
+	../../configure --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
 	  --build=x86_64-w64-mingw32 --enable-shared \
-	  --with-gmp-prefix=/crossdev/gdc-4.8/gmp-4.3.2/64 \
+	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  CFLAGS="-O2" LDFLAGS="-s"
 	  make && make install
 	cd ..
@@ -414,10 +419,10 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	mkdir -p build/32
 	cd build/32
 	 #export PATH="$(PATH):$(GMP_STAGE)/32/bin:$(PPL_STAGE)/32/bin"
-	../../configure --prefix=/crossdev/gdc-4.8/cloog-0.18.0/32 \
+	../../configure --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/32 \
 	  --build=x86_64-w64-mingw32 --disable-static --enable-shared \
-	  --with-gmp-prefix=/crossdev/gdc-4.8/gmp-4.3.2/32 \
-      --with-isl-prefix=/crossdev/gdc-4.8/isl-0.11.1/32 \
+	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
+      --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/32 \
 	  CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" LDFLAGS="-s -m32"
 	  make && make install
 	cd ../..
@@ -425,10 +430,10 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	mkdir -p build/64
 	cd build/64
 	 #export PATH="$(PATH):$(GMP_STAGE)/32/bin:$(PPL_STAGE)/32/bin"
-	../../configure --prefix=/crossdev/gdc-4.8/cloog-0.18.0/64 \
+	../../configure --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/64 \
 	  --build=x86_64-w64-mingw32 --disable-static --enable-shared \
-	  --with-gmp-prefix=/crossdev/gdc-4.8/gmp-4.3.2/64 \
-      --with-isl-prefix=/crossdev/gdc-4.8/isl-0.11.1/64 \
+	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+      --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
 	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s"
 	make && make install
 	cd ..
@@ -436,18 +441,18 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	popd
 fi
 
-export GCC_PREFIX="/crossdev/gdc-4.8/release"
+export GCC_PREFIX="$CROSSDEV/gdc-4.8/release"
 
 # Copy runtime files to release
 mkdir -p $GCC_PREFIX/x86_64-w64-mingw32
 mkdir -p $GCC_PREFIX/x86_64-w64-mingw32/bin32
 mkdir -p $GCC_PREFIX/x86_64-w64-mingw32/lib32
 
-GMP_STAGE=/crossdev/gdc-4.8/gmp-4.3.2/
-MPFR_STAGE=/crossdev/gdc-4.8/mpfr-3.1.1/
-MPC_STAGE=/crossdev/gdc-4.8/mpc-1.0.1/
-ISL_STAGE=/crossdev/gdc-4.8/isl-0.11.1/
-CLOOG_STAGE=/crossdev/gdc-4.8/cloog-0.18.0/
+GMP_STAGE=$CROSSDEV/gdc-4.8/gmp-4.3.2/
+MPFR_STAGE=$CROSSDEV/gdc-4.8/mpfr-3.1.1/
+MPC_STAGE=$CROSSDEV/gdc-4.8/mpc-1.0.1/
+ISL_STAGE=$CROSSDEV/gdc-4.8/isl-0.11.1/
+CLOOG_STAGE=$CROSSDEV/gdc-4.8/cloog-0.18.0/
 
 cp -Rp $GMP_STAGE/64/*		$GCC_PREFIX/x86_64-w64-mingw32/
 cp -Rp $GMP_STAGE/32/bin/*	$GCC_PREFIX/x86_64-w64-mingw32/bin32
@@ -566,8 +571,8 @@ fi
 pushd GDMD
 #Ok to fail. results in testsuite not running
 PATH=/c/strawberry/perl/bin:$PATH TMPDIR=. cmd /c "pp dmd-script -o gdmd.exe"
-cp gdmd.exe /crossdev/gdc-4.8/release/bin/
-cp dmd-script /crossdev/gdc-4.8/release/bin/gdmd
+cp gdmd.exe $CROSSDEV/gdc-4.8/release/bin/
+cp dmd-script $CROSSDEV/gdc-4.8/release/bin/gdmd
 popd
 
 # Test build
