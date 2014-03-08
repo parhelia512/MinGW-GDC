@@ -57,11 +57,12 @@ pushd $CROSSDEV/gdc-4.8/src
 
 function lazy_download
 {
-  local file=$1
-  local url=$2
+  local file="$1"
+  local url="$2"
 
 	if [ ! -e "$file" ]; then
-		wget "$url" -O "$file"
+		wget "$url" -O "${file}.tmp"
+    mv "${file}.tmp" "$file"
 	fi
 }
 
