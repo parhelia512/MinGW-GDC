@@ -19,22 +19,29 @@ if [ ! -d /crossdev/gdc-4.8 ]; then
 	exit 1
 fi
 
-wget=$(which wget 2>/dev/null)
-if [ "$wget" == "" ]; then
+function isMissing
+{
+  progName=$1
+  if which $progName 2>/dev/null; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+if isMissing "wget"; then
 	echo "wget not installed.  Please install with:"
 	echo "mingw-get install msys-wget"
 	exit 1
 fi
 
-unzip=$(which unzip 2>/dev/null)
-if [ "$unzip" == "" ]; then
+if isMissing "unzip"; then
 	echo "unzip not installed.  Please install with:"
 	echo "mingw-get install msys-unzip"
 	exit 1
 fi
 
-p7za=$(which 7za 2>/dev/null)
-if [ "$p7za" == "" ]; then
+if isMissing "7za" ; then
 	echo "7za not installed.  Please install with:"
 	echo "pacman -S p7zip"
 	exit 1
