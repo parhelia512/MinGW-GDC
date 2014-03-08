@@ -69,14 +69,14 @@ function lazy_download
   local url="$2"
 
 	if [ ! -e "$file" ]; then
-		wget "$url" -O "${file}.tmp"
+		wget "$url" -c -O "${file}.tmp"
     mv "${file}.tmp" "$file"
 	fi
 }
 
 # Download and install x86-64 build tools
 
-function install_build_tools
+function install_build_tools 
 {
   lazy_download "x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z" "http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/sjlj/x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z/download"
 
