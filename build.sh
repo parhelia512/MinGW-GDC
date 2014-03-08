@@ -76,7 +76,7 @@ function lazy_download
 
 # Download and install x86-64 build tools
 
-function install_build_tools 
+function install_build_tools
 {
   lazy_download "x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z" "http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/sjlj/x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z/download"
 
@@ -175,37 +175,43 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
 	popd
 fi
 
-# Compile MinGW64 runtime
-if [ ! -e mingw-w64-v3.0.0/build/.built ]; then
+function build_runtime 
+{
+  # Compile MinGW64 runtime
+  if [ -e mingw-w64-v3.0.0/build/.built ]; then
+    return 0
+  fi
 
   lazy_download "mingw-w64-v3.0.0.tar.bz2" "http://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2/download"
 
-	if [ ! -d "mingw-w64-v3.0.0" ]; then
-		tar -xvjf mingw-w64-v3.0.0.tar.bz2
-		cd mingw-w64-v3.0.0
-		# prune unnecessary folders.
-		git init
-		git config user.email "nobody@localhost"
-		git config user.name "Nobody"
-		git config core.autocrlf false
-		git add *
-		git commit -am "MinGW/GDC restore point"
-		cd ..
-	else
-		cd mingw-w64-v3.0.0
-		git reset --hard
-		git clean -f
-		cd ..
-	fi
-	pushd mingw-w64-v3.0.0
-	mkdir -p build
-	cd build
-	../configure --prefix=$CROSSDEV/gdc-4.8/release --build=x86_64-w64-mingw32 \
-	  --enable-lib32 --enable-sdk=all
-	make && make install
-	touch .built
-	popd
-fi
+  if [ ! -d "mingw-w64-v3.0.0" ]; then
+    tar -xvjf mingw-w64-v3.0.0.tar.bz2
+    cd mingw-w64-v3.0.0
+    # prune unnecessary folders.
+    git init
+    git config user.email "nobody@localhost"
+    git config user.name "Nobody"
+    git config core.autocrlf false
+    git add *
+    git commit -am "MinGW/GDC restore point"
+    cd ..
+  else
+    cd mingw-w64-v3.0.0
+    git reset --hard
+    git clean -f
+    cd ..
+  fi
+  pushd mingw-w64-v3.0.0
+  mkdir -p build
+  cd build
+  ../configure --prefix=$CROSSDEV/gdc-4.8/release --build=x86_64-w64-mingw32 \
+    --enable-lib32 --enable-sdk=all
+  make && make install
+  touch .built
+  popd
+}
+
+build_runtime
 
 # Compile GMP
 if [ ! -e gmp-4.3.2/build/.built ]; then
