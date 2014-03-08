@@ -52,6 +52,14 @@ if isMissing "7za" ; then
 	exit 1
 fi
 
+if isMissing "gcc" ; then
+	echo "gcc not installed.  Please install with:"
+	echo "pacman -S mingw-gcc"
+  echo "or"
+	echo "apt-get install gcc"
+	exit 1
+fi
+
 root=$(pwd)
 pushd $CROSSDEV/gdc-4.8/src
 
@@ -68,28 +76,35 @@ function lazy_download
 
 # Download and install x86-64 build tools
 
-lazy_download "x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z" "http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/sjlj/x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z/download"
+function install_build_tools
+{
+  lazy_download "x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z" "http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/sjlj/x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z/download"
 
-if [ ! -d "$CROSSDEV/mingw64" ]; then
-	7za x -o$CROSSDEV x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z
-fi
+  if [ ! -d "$CROSSDEV/mingw64" ]; then
+    7za x -o$CROSSDEV x86_64-4.8.2-release-win32-sjlj-rt_v3-rev0.7z
+  fi
 
-export PATH=$CROSSDEV/mingw64/bin:$PATH
+  export PATH=$CROSSDEV/mingw64/bin:$PATH
+
+
+  # Install some basic DLL dependencies
+  mkdir -p $CROSSDEV/gdc-4.8/release/bin
+
+  lazy_download "libiconv-1.14-3-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/libiconv/libiconv-1.14-3/libiconv-1.14-3-mingw32-dll.tar.lzma/download"
+  #	tar --lzma -xvf libiconv-1.14-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
+
+  lazy_download "gettext-0.18.3.1-1-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/gettext/gettext-0.18.3.1-1/gettext-0.18.3.1-1-mingw32-dll.tar.lzma/download"
+  #	tar --lzma -xvf gettext-0.18.3.1-1-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
+
+  lazy_download "gcc-core-4.8.1-3-mingw32-dll.tar.lzma" "http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.1-3/gcc-core-4.8.1-3-mingw32-dll.tar.lzma"
+  #	tar --lzma -xvf gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release bin/libgcc_s_dw2-1.dll
+}
+
+#install_build_tools
+
 # Configure x86-64 build environment
 gcc -v
 
-
-# Install some basic DLL dependencies
-mkdir -p $CROSSDEV/gdc-4.8/release/bin
-
-lazy_download "libiconv-1.14-3-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/libiconv/libiconv-1.14-3/libiconv-1.14-3-mingw32-dll.tar.lzma/download"
-#	tar --lzma -xvf libiconv-1.14-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
-
-lazy_download "gettext-0.18.3.1-1-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/gettext/gettext-0.18.3.1-1/gettext-0.18.3.1-1-mingw32-dll.tar.lzma/download"
-#	tar --lzma -xvf gettext-0.18.3.1-1-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
-
-lazy_download "gcc-core-4.8.1-3-mingw32-dll.tar.lzma" "http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.1-3/gcc-core-4.8.1-3-mingw32-dll.tar.lzma"
-#	tar --lzma -xvf gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release bin/libgcc_s_dw2-1.dll
 
 # Extracts archive and converts to git repo.
 # If git repo exists, resets
