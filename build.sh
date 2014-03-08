@@ -175,13 +175,8 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
 	popd
 fi
 
-function build_runtime 
+function build_runtime
 {
-  # Compile MinGW64 runtime
-  if [ -e mingw-w64-v3.0.0/build/.built ]; then
-    return 0
-  fi
-
   lazy_download "mingw-w64-v3.0.0.tar.bz2" "http://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2/download"
 
   if [ ! -d "mingw-w64-v3.0.0" ]; then
@@ -202,16 +197,37 @@ function build_runtime
     cd ..
   fi
   pushd mingw-w64-v3.0.0
+
+  echo "********************************************************************************"
+  echo "Building runtime headers"
+  pushd mingw-w64-headers
   mkdir -p build
   cd build
-  ../configure --prefix=$CROSSDEV/gdc-4.8/release --build=x86_64-w64-mingw32 \
-    --enable-lib32 --enable-sdk=all
-  make && make install
-  touch .built
+  if [ -e .built ] ; then
+    ../configure --prefix=$CROSSDEV/gdc-4.8/release/x86_64-w64-mingw32 \
+      --build=x86_64-w64-mingw32 \
+      --enable-lib32 --enable-sdk=all
+    make && make install
+    touch .built
+  fi
+  popd
+
+  echo "********************************************************************************"
+  echo "Building runtime CRT"
+  pushd mingw-w64-crt
+  mkdir -p build
+  cd build
+  if [ ! -e .built ] ; then
+    ../configure --prefix=$CROSSDEV/gdc-4.8/release/x86_64-w64-mingw32 \
+      --build=x86_64-w64-mingw32 \
+      --enable-lib32
+    make && make install
+    touch .built
+  fi
+  popd
+
   popd
 }
-
-build_runtime
 
 # Compile GMP
 if [ ! -e gmp-4.3.2/build/.built ]; then
@@ -576,11 +592,16 @@ function build_gdc {
 	  --with-pkgversion="MinGW-GDC64" \
 	  --with-bugurl="http://gdcproject.org/bugzilla/" \
 	  --disable-shared --disable-bootstrap
-	make && make install
+	make all-host
+  make install-host
 	popd
 }
 export PATH="$GCC_PREFIX/bin:$PATH"
 build_gdc
+
+
+build_runtime
+
 
 # get DMD script
 if [ ! -d "GDMD" ]; then
