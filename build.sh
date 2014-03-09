@@ -68,6 +68,14 @@ if isMissing "gcc" ; then
 	exit 1
 fi
 
+if isMissing "git" ; then
+	echo "git not installed.  Please install with:"
+	echo "pacman -S mingw-git"
+  echo "or"
+	echo "apt-get install git"
+	exit 1
+fi
+
 root=$(pwd)
 pushd $CROSSDEV/gdc-4.8/src
 
@@ -272,7 +280,8 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
 	# Make 32
 	mkdir -p build/32
 	cd build/32
-	../../configure --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
+	../../configure \
+    --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  --enable-cxx --disable-static --enable-shared \
 	  LD="ld.exe -m i386pe" CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" \
 	  LDFLAGS="-m32 -s" ABI=32
@@ -282,7 +291,8 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
 	# Make 64
 	mkdir -p build/64
 	cd build/64
-	../../configure --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+	../../configure \
+    --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  --enable-cxx --disable-static --enable-shared \
 	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s" ABI=64
 	make && make install
@@ -320,22 +330,26 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	mkdir -p build/32
 	pushd build/32
 	#export PATH="$(PATH):$(GMP_STAGE)/32/bin"
-	../../configure --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/32 \
+	../../configure \
+    --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/32 \
 	  --disable-static --enable-shared \
 	  CFLAGS="-O2 -m32 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/32/include" \
 	  LDFLAGS="-m32 -s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/32/lib"
-	make && make install
+	make
+  make install
   popd
 
 	# Make 64
 	mkdir -p build/64
 	pushd build/64
 	#export PATH="$(PATH):$(GMP_STAGE)/64/bin"
-	../../configure --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
+	../../configure \
+    --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
 	  --disable-static --enable-shared \
 	  CFLAGS="-O2 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/64/include" \
 	  LDFLAGS="-s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/64/lib"
-	make && make install
+	make 
+  make install
   popd
 
 	touch build/.built
@@ -370,22 +384,27 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 	# Make 32
 	mkdir -p build/32
 	cd build/32
-	../../configure --prefix=$CROSSDEV/gdc-4.8/mpc-1.0.1/32 \
+	../../configure \
+    --prefix=$CROSSDEV/gdc-4.8/mpc-1.0.1/32 \
 	  --disable-static --enable-shared \
 	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
-	make && make install
+	make 
+  make install
 	cd ../..
+
 	# Make 64
 	mkdir -p build/64
 	cd build/64
-	../../configure --prefix=$CROSSDEV/gdc-4.8/mpc-1.0.1/64 \
+  ../../configure \
+    --prefix=$CROSSDEV/gdc-4.8/mpc-1.0.1/64 \
 	  --disable-static --enable-shared \
 	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
 	  CFLAGS="-O2" LDFLAGS="-s"
-	  make && make install
+  make
+  make install
 	cd ..
 
 	touch .built
@@ -420,20 +439,25 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 	pushd isl-0.11.1
 	mkdir -p build/32
 	cd build/32
-	../../configure --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/32 \
+	../../configure \
+    --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/32 \
 	  --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
-	make && make install
+	make 
+  make install
 	cd ../..
+
 	# Make 64
 	mkdir -p build/64
 	cd build/64
-	../../configure --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
+	../../configure \
+    --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
 	  --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  CFLAGS="-O2" LDFLAGS="-s"
-	  make && make install
+	  make 
+    make install
 	cd ..
 
 	touch .built
@@ -470,23 +494,30 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	mkdir -p build/32
 	cd build/32
 	 #export PATH="$(PATH):$(GMP_STAGE)/32/bin:$(PPL_STAGE)/32/bin"
-	../../configure --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/32 \
-	  --disable-static --enable-shared \
+	../../configure \
+    --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/32 \
+	  --disable-static \
+    --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
       --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/32 \
 	  CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" LDFLAGS="-s -m32"
-	  make && make install
+	  make 
+    make install
 	cd ../..
+
 	# Build 64
 	mkdir -p build/64
 	cd build/64
 	 #export PATH="$(PATH):$(GMP_STAGE)/32/bin:$(PPL_STAGE)/32/bin"
-	../../configure --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/64 \
-	  --disable-static --enable-shared \
+	../../configure \
+    --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/64 \
+	  --disable-static \
+    --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
       --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
 	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s"
-	make && make install
+	make 
+  make install
 	cd ..
 	touch .built
 	popd
@@ -604,12 +635,16 @@ function build_gdc_host {
 	export LPATH="$GCC_PREFIX/lib;$GCC_PREFIX/x86_64-w64-mingw32/lib"
 	export CPATH="$GCC_PREFIX/include;$GCC_PREFIX/x86_64-w64-mingw32/include"
 	#export BOOT_CFLAGS="-static-libgcc -static"
-	../configure --prefix=$GCC_PREFIX --with-local-prefix=$GCC_PREFIX \
+	../configure \
+    --prefix=$GCC_PREFIX \
+    --with-local-prefix=$GCC_PREFIX \
 	  --target=x86_64-w64-mingw32 \
-	  --enable-languages=c,c++,d,lto --enable-sjlj-exceptions \
+	  --enable-languages=c,c++,d,lto \
+    --enable-sjlj-exceptions \
 	  --enable-lto \
     --disable-nls \
-	  --disable-win32-registry --with-gnu-ld \
+	  --disable-win32-registry \
+    --with-gnu-ld \
     --disable-bootstrap
 	make all-host
   make install-host
