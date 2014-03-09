@@ -10,7 +10,7 @@ set -e
 
 export PATH="/usr/local/bin:/usr/bin:/bin"
 
-trap "bash" EXIT
+#trap "bash" EXIT
 
 CROSSDEV=$1
 
@@ -184,6 +184,7 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
     --prefix=$CROSSDEV/gdc-4.8/release \
     --target=x86_64-w64-mingw32 \
     --disable-nls \
+    --disable-multilib \
     --disable-bootstrap \
 	  CFLAGS="-O2" \
     LDFLAGS="-s"
@@ -643,6 +644,7 @@ function build_gdc_host {
     --enable-sjlj-exceptions \
 	  --enable-lto \
     --disable-nls \
+    --disable-multilib \
 	  --disable-win32-registry \
     --with-gnu-ld \
     --disable-bootstrap
