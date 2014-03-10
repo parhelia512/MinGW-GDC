@@ -626,14 +626,9 @@ function download_gdc {
 	popd
 }
 
-# Setup GDC and compile
-function build_gdc_host {
+function download_gcc {
 
   lazy_download "$CACHE/gcc-4.8.1.tar.bz2" "http://ftp.gnu.org/gnu/gcc/gcc-4.8.1/gcc-4.8.1.tar.bz2"
-
-  if [ -e gcc-4.8.1/build/.built ] ; then
-    return 0
-  fi
 
 	# Extract and configure a git repo to allow fast restoration for future builds.
 	# mkgit gcc-4.8.1.tar.bz2 gcc-4.8.1
@@ -655,7 +650,16 @@ function build_gdc_host {
 		git clean -f -d
 		cd ..
 	fi
+}
 
+# Setup GDC and compile
+function build_gdc_host {
+
+  if [ -e gcc-4.8.1/build/.built ] ; then
+    return 0
+  fi
+
+  download_gcc
   download_gdc
 
 	pushd GDC
