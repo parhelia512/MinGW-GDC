@@ -598,6 +598,27 @@ cp -Rp $CLOOG_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
 
 #cp -Rp $GCC_PREFIX/x86_64-$vendor-mingw32/bin/*.dll $GCC_PREFIX/bin
 
+function download_gdc {
+
+	# Clone and configure GDC
+	if [ ! -d "GDC" ]; then
+		git clone https://github.com/D-Programming-GDC/GDC.git -b $GDC_BRANCH
+	else
+		cd GDC
+		git fetch
+		git reset --hard origin/$GDC_BRANCH
+		git clean -f -d
+		cd ..
+	fi
+
+	pushd GDC
+
+	if [ "$GDC_VERSION" != "" ]; then
+		git checkout $GDC_VERSION
+	fi
+
+	popd
+}
 
 # Setup GDC and compile
 function build_gdc_host {
@@ -629,23 +650,9 @@ function build_gdc_host {
 		cd ..
 	fi
 
-	# Clone and configure GDC
-	if [ ! -d "GDC" ]; then
-		git clone https://github.com/D-Programming-GDC/GDC.git -b $GDC_BRANCH
-	else
-		cd GDC
-		git fetch
-		git reset --hard origin/$GDC_BRANCH
-		git clean -f -d
-		cd ..
-	fi
+  download_gdc
 
 	pushd GDC
-
-	if [ "$GDC_VERSION" != "" ]; then
-		git checkout $GDC_VERSION
-	fi
-
 	#patch -p1 < $root/patches/mingw-gdc.patch
 	#patch -p1 < $root/patches/mingw-gdc-remove-main-from-dmain2.patch
 	# Should use git am
@@ -656,9 +663,6 @@ function build_gdc_host {
 
 	./setup-gcc.sh ../gcc-4.8.1
 	popd
-
-
-
 
 	pushd gcc-4.8.1
 	patch -p1 < $root/patches/mingw-tls-gcc-4.8.patch
