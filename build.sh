@@ -30,7 +30,9 @@ mkdir -p $CACHE
 function isMissing
 {
   progName=$1
-  if which $progName 2>/dev/null; then
+  echo -n "Checking for $progName ... "
+  if which $progName 1>/dev/null 2>/dev/null; then
+    echo "ok"
     return 1
   else
     return 0
