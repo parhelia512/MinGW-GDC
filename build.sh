@@ -27,6 +27,12 @@ CACHE=$CROSSDEV/cache
 mkdir -p $CROSSDEV/gdc-4.8/src
 mkdir -p $CACHE
 
+if [ -z "$MAKE" ]; then
+  MAKE="make"
+fi
+
+export MAKE
+
 function isMissing
 {
   progName=$1
@@ -231,8 +237,8 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
     --disable-bootstrap \
 	  CFLAGS="-O2" \
     LDFLAGS="-s"
-	make
-  make install
+	$MAKE
+  $MAKE install
 	touch .built
 	popd
 fi
@@ -272,8 +278,8 @@ function build_runtime
     ../configure \
       --prefix=$CROSSDEV/gdc-4.8/release/x86_64-$vendor-mingw32 \
       --host=x86_64-$vendor-mingw32
-    make
-    make install
+    $MAKE
+    $MAKE install
     touch .built
   fi
   popd
@@ -287,7 +293,7 @@ function build_runtime
     ../configure \
       --prefix=$CROSSDEV/gdc-4.8/release/x86_64-$vendor-mingw32 \
       --host=x86_64-$vendor-mingw32
-    make && make install
+    $MAKE && $MAKE install
     touch .built
   fi
   popd
@@ -329,7 +335,7 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
 	  --enable-cxx --disable-static --enable-shared \
 	  LD="ld.exe -m i386pe" CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" \
 	  LDFLAGS="-m32 -s" ABI=32
-	make && make install
+	$MAKE && $MAKE install
 	cd ../..
 
 	# Make 64
@@ -339,7 +345,7 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
     --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  --enable-cxx --disable-static --enable-shared \
 	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s" ABI=64
-	make && make install
+	$MAKE && $MAKE install
 	cd ..
 	touch .built
 	popd
@@ -379,8 +385,8 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	  --disable-static --enable-shared \
 	  CFLAGS="-O2 -m32 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/32/include" \
 	  LDFLAGS="-m32 -s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/32/lib"
-	make
-  make install
+	$MAKE
+  $MAKE install
   popd
 
 	# Make 64
@@ -392,8 +398,8 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	  --disable-static --enable-shared \
 	  CFLAGS="-O2 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/64/include" \
 	  LDFLAGS="-s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/64/lib"
-	make
-  make install
+	$MAKE
+  $MAKE install
   popd
 
 	touch build/.built
@@ -434,8 +440,8 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
-	make
-  make install
+	$MAKE
+  $MAKE install
 	cd ../..
 
 	# Make 64
@@ -447,8 +453,8 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
 	  CFLAGS="-O2" LDFLAGS="-s"
-  make
-  make install
+  $MAKE
+  $MAKE install
 	cd ..
 
 	touch .built
@@ -488,8 +494,8 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 	  --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
-	make
-  make install
+	$MAKE
+  $MAKE install
 	cd ../..
 
 	# Make 64
@@ -500,8 +506,8 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 	  --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  CFLAGS="-O2" LDFLAGS="-s"
-	  make
-    make install
+	  $MAKE
+    $MAKE install
 	cd ..
 
 	touch .built
@@ -545,8 +551,8 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
       --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/32 \
 	  CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" LDFLAGS="-s -m32"
-	  make
-    make install
+	  $MAKE
+    $MAKE install
 	cd ../..
 
 	# Build 64
@@ -560,8 +566,8 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
       --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
 	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s"
-	make
-  make install
+	$MAKE
+  $MAKE install
 	cd ..
 	touch .built
 	popd
@@ -600,15 +606,31 @@ cp -Rp $CLOOG_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
 
 #cp -Rp $GCC_PREFIX/x86_64-$vendor-mingw32/bin/*.dll $GCC_PREFIX/bin
 
+function download_gdc {
 
-# Setup GDC and compile
-function build_gdc_host {
+	# Clone and configure GDC
+	if [ ! -d "GDC" ]; then
+		git clone https://github.com/D-Programming-GDC/GDC.git -b $GDC_BRANCH
+	else
+		cd GDC
+		git fetch
+		git reset --hard origin/$GDC_BRANCH
+		git clean -f -d
+		cd ..
+	fi
+
+	pushd GDC
+
+	if [ "$GDC_VERSION" != "" ]; then
+		git checkout $GDC_VERSION
+	fi
+
+	popd
+}
+
+function download_gcc {
 
   lazy_download "$CACHE/gcc-4.8.1.tar.bz2" "http://ftp.gnu.org/gnu/gcc/gcc-4.8.1/gcc-4.8.1.tar.bz2"
-
-  if [ -e gcc-4.8.1/build/.built ] ; then
-    return 0
-  fi
 
 	# Extract and configure a git repo to allow fast restoration for future builds.
 	# mkgit gcc-4.8.1.tar.bz2 gcc-4.8.1
@@ -630,24 +652,19 @@ function build_gdc_host {
 		git clean -f -d
 		cd ..
 	fi
+}
 
-	# Clone and configure GDC
-	if [ ! -d "GDC" ]; then
-		git clone https://github.com/D-Programming-GDC/GDC.git -b $GDC_BRANCH
-	else
-		cd GDC
-		git fetch
-		git reset --hard origin/$GDC_BRANCH
-		git clean -f -d
-		cd ..
-	fi
+# Setup GDC and compile
+function build_gdc_host {
+
+  if [ -e gcc-4.8.1/build/.built ] ; then
+    return 0
+  fi
+
+  download_gcc
+  download_gdc
 
 	pushd GDC
-
-	if [ "$GDC_VERSION" != "" ]; then
-		git checkout $GDC_VERSION
-	fi
-
 	#patch -p1 < $root/patches/mingw-gdc.patch
 	#patch -p1 < $root/patches/mingw-gdc-remove-main-from-dmain2.patch
 	# Should use git am
@@ -658,9 +675,6 @@ function build_gdc_host {
 
 	./setup-gcc.sh ../gcc-4.8.1
 	popd
-
-
-
 
 	pushd gcc-4.8.1
 	patch -p1 < $root/patches/mingw-tls-gcc-4.8.patch
@@ -691,16 +705,16 @@ function build_gdc_host {
 	  --disable-win32-registry \
     --with-gnu-ld \
     --disable-bootstrap
-	make all-host
-  make install-host
+	$MAKE all-host
+  $MAKE install-host
   touch .built
 	popd
 }
 
 function build_gdc_target {
 	pushd gcc-4.8.1/build
-	make all-target
-  make install-target
+	$MAKE all-target
+  $MAKE install-target
 	popd
 }
 
@@ -751,5 +765,5 @@ else
 fi
 pushd dmd/test
 patch -p2 < $root/patches/mingw-testsuite.patch
-make
+$MAKE
 pushd
