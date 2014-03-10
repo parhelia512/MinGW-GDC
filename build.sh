@@ -390,7 +390,7 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	  --disable-static --enable-shared \
 	  CFLAGS="-O2 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/64/include" \
 	  LDFLAGS="-s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/64/lib"
-	make 
+	make
   make install
   popd
 
@@ -432,7 +432,7 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
-	make 
+	make
   make install
 	cd ../..
 
@@ -486,7 +486,7 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 	  --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
-	make 
+	make
   make install
 	cd ../..
 
@@ -498,7 +498,7 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 	  --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  CFLAGS="-O2" LDFLAGS="-s"
-	  make 
+	  make
     make install
 	cd ..
 
@@ -543,7 +543,7 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
       --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/32 \
 	  CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" LDFLAGS="-s -m32"
-	  make 
+	  make
     make install
 	cd ../..
 
@@ -558,7 +558,7 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
       --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
 	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s"
-	make 
+	make
   make install
 	cd ..
 	touch .built
