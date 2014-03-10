@@ -327,17 +327,6 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
 	pushd gmp-4.3.2
 	patch -p1 < $root/patches/gmp-4.3.2-w64.patch
 
-	# Make 32
-	mkdir -p build/32
-	cd build/32
-	../../configure \
-    --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
-	  --enable-cxx --disable-static --enable-shared \
-	  LD="ld.exe -m i386pe" CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" \
-	  LDFLAGS="-m32 -s" ABI=32
-	$MAKE && $MAKE install
-	cd ../..
-
 	# Make 64
 	mkdir -p build/64
 	cd build/64
@@ -375,19 +364,6 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	fi
 
 	pushd mpfr-3.1.1
-
-	# Make 32
-	mkdir -p build/32
-	pushd build/32
-	#export PATH="$(PATH):$(GMP_STAGE)/32/bin"
-	../../configure \
-    --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/32 \
-	  --disable-static --enable-shared \
-	  CFLAGS="-O2 -m32 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/32/include" \
-	  LDFLAGS="-m32 -s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/32/lib"
-	$MAKE
-  $MAKE install
-  popd
 
 	# Make 64
 	mkdir -p build/64
@@ -431,18 +407,6 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 
 
 	pushd mpc-1.0.1
-	# Make 32
-	mkdir -p build/32
-	cd build/32
-	../../configure \
-    --prefix=$CROSSDEV/gdc-4.8/mpc-1.0.1/32 \
-	  --disable-static --enable-shared \
-	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
-	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/32 \
-	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
-	$MAKE
-  $MAKE install
-	cd ../..
 
 	# Make 64
 	mkdir -p build/64
@@ -540,20 +504,6 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	fi
 
 	pushd cloog-0.18.0
-	# Build 32
-	mkdir -p build/32
-	cd build/32
-	 #export PATH="$(PATH):$(GMP_STAGE)/32/bin:$(PPL_STAGE)/32/bin"
-	../../configure \
-    --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/32 \
-	  --disable-static \
-    --enable-shared \
-	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
-      --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/32 \
-	  CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" LDFLAGS="-s -m32"
-	  $MAKE
-    $MAKE install
-	cd ../..
 
 	# Build 64
 	mkdir -p build/64
