@@ -53,6 +53,22 @@ if isMissing "unzip"; then
 	exit 1
 fi
 
+if isMissing "tar"; then
+	echo "tar not installed.  Please install with:"
+	echo "mingw-get install tar"
+  echo "or"
+	echo "apt-get install tar"
+	exit 1
+fi
+
+if isMissing "patch"; then
+	echo "patch not installed.  Please install with:"
+	echo "mingw-get install patch"
+  echo "or"
+	echo "apt-get install patch"
+	exit 1
+fi
+
 if isMissing "7za" ; then
 	echo "7za not installed.  Please install with:"
 	echo "pacman -S p7zip"
@@ -74,6 +90,14 @@ if isMissing "git" ; then
 	echo "pacman -S mingw-git"
   echo "or"
 	echo "apt-get install git"
+	exit 1
+fi
+
+if isMissing "cmp" ; then
+	echo "cmp not installed.  Please install with:"
+	echo "pacman -S diffutils"
+  echo "or"
+	echo "apt-get install something"
 	exit 1
 fi
 
