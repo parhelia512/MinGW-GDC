@@ -227,6 +227,8 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
 	fi
 	pushd binutils-2.23.2
 	patch -p1 < $root/patches/mingw-tls-binutils-2.23.1.patch
+	sed "s/^%.*//" -i bfd/doc/bfd.texinfo
+	sed "s/^%.*//" -i ld/ld.texinfo
 	mkdir -p build
 	cd build
 	../configure \
