@@ -101,6 +101,22 @@ if isMissing "cmp" ; then
 	exit 1
 fi
 
+if isMissing "flex" ; then
+	echo "flex not installed.  Please install with:"
+	echo "pacman -S flex"
+  echo "or"
+	echo "apt-get install flex"
+	exit 1
+fi
+
+if isMissing "bison" ; then
+	echo "bison not installed.  Please install with:"
+	echo "pacman -S bison"
+  echo "or"
+	echo "apt-get install bison"
+	exit 1
+fi
+
 root=$(pwd)
 pushd $CROSSDEV/gdc-4.8/src
 
