@@ -27,6 +27,12 @@ CACHE=$CROSSDEV/cache
 mkdir -p $CROSSDEV/gdc-4.8/src
 mkdir -p $CACHE
 
+if [ -z "$MAKE" ]; then
+  MAKE="make"
+fi
+
+export MAKE
+
 function isMissing
 {
   progName=$1
@@ -229,8 +235,8 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
     --disable-bootstrap \
 	  CFLAGS="-O2" \
     LDFLAGS="-s"
-	make
-  make install
+	$MAKE
+  $MAKE install
 	touch .built
 	popd
 fi
@@ -270,8 +276,8 @@ function build_runtime
     ../configure \
       --prefix=$CROSSDEV/gdc-4.8/release/x86_64-$vendor-mingw32 \
       --host=x86_64-$vendor-mingw32
-    make
-    make install
+    $MAKE
+    $MAKE install
     touch .built
   fi
   popd
@@ -285,7 +291,7 @@ function build_runtime
     ../configure \
       --prefix=$CROSSDEV/gdc-4.8/release/x86_64-$vendor-mingw32 \
       --host=x86_64-$vendor-mingw32
-    make && make install
+    $MAKE && $MAKE install
     touch .built
   fi
   popd
@@ -327,7 +333,7 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
 	  --enable-cxx --disable-static --enable-shared \
 	  LD="ld.exe -m i386pe" CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" \
 	  LDFLAGS="-m32 -s" ABI=32
-	make && make install
+	$MAKE && $MAKE install
 	cd ../..
 
 	# Make 64
@@ -337,7 +343,7 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
     --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  --enable-cxx --disable-static --enable-shared \
 	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s" ABI=64
-	make && make install
+	$MAKE && $MAKE install
 	cd ..
 	touch .built
 	popd
@@ -377,8 +383,8 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	  --disable-static --enable-shared \
 	  CFLAGS="-O2 -m32 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/32/include" \
 	  LDFLAGS="-m32 -s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/32/lib"
-	make
-  make install
+	$MAKE
+  $MAKE install
   popd
 
 	# Make 64
@@ -390,8 +396,8 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	  --disable-static --enable-shared \
 	  CFLAGS="-O2 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/64/include" \
 	  LDFLAGS="-s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/64/lib"
-	make
-  make install
+	$MAKE
+  $MAKE install
   popd
 
 	touch build/.built
@@ -432,8 +438,8 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
-	make
-  make install
+	$MAKE
+  $MAKE install
 	cd ../..
 
 	# Make 64
@@ -445,8 +451,8 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
 	  CFLAGS="-O2" LDFLAGS="-s"
-  make
-  make install
+  $MAKE
+  $MAKE install
 	cd ..
 
 	touch .built
@@ -486,8 +492,8 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 	  --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
 	  CFLAGS="-O2 -m32" LDFLAGS="-m32 -s"
-	make
-  make install
+	$MAKE
+  $MAKE install
 	cd ../..
 
 	# Make 64
@@ -498,8 +504,8 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 	  --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
 	  CFLAGS="-O2" LDFLAGS="-s"
-	  make
-    make install
+	  $MAKE
+    $MAKE install
 	cd ..
 
 	touch .built
@@ -543,8 +549,8 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/32 \
       --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/32 \
 	  CFLAGS="-O2 -m32" CXXFLAGS="-O2 -m32" LDFLAGS="-s -m32"
-	  make
-    make install
+	  $MAKE
+    $MAKE install
 	cd ../..
 
 	# Build 64
@@ -558,8 +564,8 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
       --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
 	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s"
-	make
-  make install
+	$MAKE
+  $MAKE install
 	cd ..
 	touch .built
 	popd
@@ -693,16 +699,16 @@ function build_gdc_host {
 	  --disable-win32-registry \
     --with-gnu-ld \
     --disable-bootstrap
-	make all-host
-  make install-host
+	$MAKE all-host
+  $MAKE install-host
   touch .built
 	popd
 }
 
 function build_gdc_target {
 	pushd gcc-4.8.1/build
-	make all-target
-  make install-target
+	$MAKE all-target
+  $MAKE install-target
 	popd
 }
 
@@ -753,5 +759,5 @@ else
 fi
 pushd dmd/test
 patch -p2 < $root/patches/mingw-testsuite.patch
-make
+$MAKE
 pushd
