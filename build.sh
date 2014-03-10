@@ -13,6 +13,7 @@ export PATH="/usr/local/bin:/usr/bin:/bin"
 #trap "bash" EXIT
 
 CROSSDEV=$1
+vendor="ace"
 
 if [ -z "$CROSSDEV" ] ; then
   CROSSDEV=/crossdev
@@ -132,7 +133,7 @@ function mkgit {
 		# Determine archive type
 		ext="${$1##*.}"
 		switch $ext
-		tar -xvjf $1
+		tar -xlf $1
 		cd $2
 
 		# prune unnecessary folders.
@@ -160,7 +161,7 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
 
 	#mkgit binutils-2.23.2.tar.gz binutils-2.23.2
 	if [ ! -d "binutils-2.23.2" ]; then
-		tar -xvzf $CACHE/binutils-2.23.2.tar.gz
+		tar -xlf $CACHE/binutils-2.23.2.tar.gz
 		cd binutils-2.23.2
 		# prune unnecessary folders.
 		git init
@@ -182,7 +183,7 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
 	cd build
 	../configure \
     --prefix=$CROSSDEV/gdc-4.8/release \
-    --target=x86_64-w64-mingw32 \
+    --target=x86_64-$vendor-mingw32 \
     --disable-nls \
     --disable-multilib \
     --disable-bootstrap \
@@ -202,7 +203,7 @@ function build_runtime
   lazy_download "$CACHE/mingw-w64-v3.0.0.tar.bz2" "http://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2/download"
 
   if [ ! -d "mingw-w64-v3.0.0" ]; then
-    tar -xvjf $CACHE/mingw-w64-v3.0.0.tar.bz2
+    tar -xlf $CACHE/mingw-w64-v3.0.0.tar.bz2
     cd mingw-w64-v3.0.0
     # prune unnecessary folders.
     git init
@@ -227,8 +228,8 @@ function build_runtime
   cd build
   if [ ! -e .built ] ; then
     ../configure \
-      --prefix=$CROSSDEV/gdc-4.8/release/x86_64-w64-mingw32 \
-      --host=x86_64-w64-mingw32
+      --prefix=$CROSSDEV/gdc-4.8/release/x86_64-$vendor-mingw32 \
+      --host=x86_64-$vendor-mingw32
     make
     make install
     touch .built
@@ -242,8 +243,8 @@ function build_runtime
   cd build
   if [ ! -e .built ] ; then
     ../configure \
-      --prefix=$CROSSDEV/gdc-4.8/release/x86_64-w64-mingw32 \
-      --host=x86_64-w64-mingw32
+      --prefix=$CROSSDEV/gdc-4.8/release/x86_64-$vendor-mingw32 \
+      --host=x86_64-$vendor-mingw32
     make && make install
     touch .built
   fi
@@ -258,7 +259,7 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
   lazy_download "$CACHE/gmp-4.3.2.tar.bz2" "http://ftp.gnu.org/gnu/gmp/gmp-4.3.2.tar.bz2"
 
 	if [ ! -d "gmp-4.3.2" ]; then
-		tar -xvjf $CACHE/gmp-4.3.2.tar.bz2
+		tar -xlf $CACHE/gmp-4.3.2.tar.bz2
 		cd gmp-4.3.2
 		# prune unnecessary folders.
 		git init
@@ -308,7 +309,7 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
   lazy_download "$CACHE/mpfr-3.1.1.tar.bz2" "http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.1.tar.bz2"
 
 	if [ ! -d "mpfr-3.1.1" ]; then
-		tar -xvjf $CACHE/mpfr-3.1.1.tar.bz2
+		tar -xlf $CACHE/mpfr-3.1.1.tar.bz2
 		cd mpfr-3.1.1
 		# prune unnecessary folders.
 		git init
@@ -363,7 +364,7 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
   lazy_download "$CACHE/mpc-1.0.1.tar.gz" http://ftp.gnu.org/gnu/mpc/mpc-1.0.1.tar.gz
 
 	if [ ! -d "mpc-1.0.1" ]; then
-		tar -xvzf $CACHE/mpc-1.0.1.tar.gz
+		tar -xlf $CACHE/mpc-1.0.1.tar.gz
 		cd mpc-1.0.1
 		# prune unnecessary folders.
 		git init
@@ -419,7 +420,7 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 
 	#mkgit isl-0.11.1.tar.bz2 isl-0.11.1
 	if [ ! -d "isl-0.11.1" ]; then
-		tar -xvjf $CACHE/isl-0.11.1.tar.bz2
+		tar -xlf $CACHE/isl-0.11.1.tar.bz2
 		cd isl-0.11.1
 
 		# prune unnecessary folders.
@@ -472,7 +473,7 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 
 	#mkgit cloog-0.18.0.tar.gz cloog-0.18.0
 	if [ ! -d "cloog-0.18.0" ]; then
-		tar -xvzf $CACHE/cloog-0.18.0.tar.gz
+		tar -xlf $CACHE/cloog-0.18.0.tar.gz
 		cd cloog-0.18.0
 
 		# prune unnecessary folders.
@@ -525,9 +526,9 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 fi
 
 # Copy runtime files to release
-mkdir -p $GCC_PREFIX/x86_64-w64-mingw32
-mkdir -p $GCC_PREFIX/x86_64-w64-mingw32/bin32
-mkdir -p $GCC_PREFIX/x86_64-w64-mingw32/lib32
+mkdir -p $GCC_PREFIX/x86_64-$vendor-mingw32
+mkdir -p $GCC_PREFIX/x86_64-$vendor-mingw32/bin32
+mkdir -p $GCC_PREFIX/x86_64-$vendor-mingw32/lib32
 
 GMP_STAGE=$CROSSDEV/gdc-4.8/gmp-4.3.2/
 MPFR_STAGE=$CROSSDEV/gdc-4.8/mpfr-3.1.1/
@@ -535,27 +536,27 @@ MPC_STAGE=$CROSSDEV/gdc-4.8/mpc-1.0.1/
 ISL_STAGE=$CROSSDEV/gdc-4.8/isl-0.11.1/
 CLOOG_STAGE=$CROSSDEV/gdc-4.8/cloog-0.18.0/
 
-cp -Rp $GMP_STAGE/64/*		$GCC_PREFIX/x86_64-w64-mingw32/
-#cp -Rp $GMP_STAGE/32/bin/*	$GCC_PREFIX/x86_64-w64-mingw32/bin32
-#cp -Rp $GMP_STAGE/32/lib/*	$GCC_PREFIX/x86_64-w64-mingw32/lib32
+cp -Rp $GMP_STAGE/64/*		$GCC_PREFIX/x86_64-$vendor-mingw32/
+#cp -Rp $GMP_STAGE/32/bin/*	$GCC_PREFIX/x86_64-$vendor-mingw32/bin32
+#cp -Rp $GMP_STAGE/32/lib/*	$GCC_PREFIX/x86_64-$vendor-mingw32/lib32
 
-cp -Rp $MPFR_STAGE/64/*     $GCC_PREFIX/x86_64-w64-mingw32
-#cp -Rp $MPFR_STAGE/32/bin/* $GCC_PREFIX/x86_64-w64-mingw32/bin32
-#cp -Rp $MPFR_STAGE/32/lib/* $GCC_PREFIX/x86_64-w64-mingw32/lib32
+cp -Rp $MPFR_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
+#cp -Rp $MPFR_STAGE/32/bin/* $GCC_PREFIX/x86_64-$vendor-mingw32/bin32
+#cp -Rp $MPFR_STAGE/32/lib/* $GCC_PREFIX/x86_64-$vendor-mingw32/lib32
 
-cp -Rp $MPC_STAGE/64/*     $GCC_PREFIX/x86_64-w64-mingw32
-#cp -Rp $MPC_STAGE/32/bin/* $GCC_PREFIX/x86_64-w64-mingw32/bin32
-#cp -Rp $MPC_STAGE/32/lib/* $GCC_PREFIX/x86_64-w64-mingw32/lib32
+cp -Rp $MPC_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
+#cp -Rp $MPC_STAGE/32/bin/* $GCC_PREFIX/x86_64-$vendor-mingw32/bin32
+#cp -Rp $MPC_STAGE/32/lib/* $GCC_PREFIX/x86_64-$vendor-mingw32/lib32
 
-cp -Rp $ISL_STAGE/64/*     $GCC_PREFIX/x86_64-w64-mingw32
-#cp -Rp $ISL_STAGE/32/bin/* $GCC_PREFIX/x86_64-w64-mingw32/bin32
-#cp -Rp $ISL_STAGE/32/lib/* $GCC_PREFIX/x86_64-w64-mingw32/lib32
+cp -Rp $ISL_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
+#cp -Rp $ISL_STAGE/32/bin/* $GCC_PREFIX/x86_64-$vendor-mingw32/bin32
+#cp -Rp $ISL_STAGE/32/lib/* $GCC_PREFIX/x86_64-$vendor-mingw32/lib32
 
-cp -Rp $CLOOG_STAGE/64/*     $GCC_PREFIX/x86_64-w64-mingw32
-#cp -Rp $CLOOG_STAGE/32/bin/* $GCC_PREFIX/x86_64-w64-mingw32/bin32
-#cp -Rp $CLOOG_STAGE/32/lib/* $GCC_PREFIX/x86_64-w64-mingw32/lib32
+cp -Rp $CLOOG_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
+#cp -Rp $CLOOG_STAGE/32/bin/* $GCC_PREFIX/x86_64-$vendor-mingw32/bin32
+#cp -Rp $CLOOG_STAGE/32/lib/* $GCC_PREFIX/x86_64-$vendor-mingw32/lib32
 
-#cp -Rp $GCC_PREFIX/x86_64-w64-mingw32/bin/*.dll $GCC_PREFIX/bin
+#cp -Rp $GCC_PREFIX/x86_64-$vendor-mingw32/bin/*.dll $GCC_PREFIX/bin
 
 
 # Setup GDC and compile
@@ -570,7 +571,7 @@ function build_gdc_host {
 	# Extract and configure a git repo to allow fast restoration for future builds.
 	# mkgit gcc-4.8.1.tar.bz2 gcc-4.8.1
 	if [ ! -d "gcc-4.8.1" ]; then
-		tar -xvjf $CACHE/gcc-4.8.1.tar.bz2
+		tar -xlf $CACHE/gcc-4.8.1.tar.bz2
 		cd gcc-4.8.1
 		# prune unnecessary folders.
 		git init
@@ -633,13 +634,13 @@ function build_gdc_host {
 	cd build
 
 	# Must build GCC using patched mingwrt
-	export LPATH="$GCC_PREFIX/lib;$GCC_PREFIX/x86_64-w64-mingw32/lib"
-	export CPATH="$GCC_PREFIX/include;$GCC_PREFIX/x86_64-w64-mingw32/include"
+	export LPATH="$GCC_PREFIX/lib;$GCC_PREFIX/x86_64-$vendor-mingw32/lib"
+	export CPATH="$GCC_PREFIX/include;$GCC_PREFIX/x86_64-$vendor-mingw32/include"
 	#export BOOT_CFLAGS="-static-libgcc -static"
 	../configure \
     --prefix=$GCC_PREFIX \
     --with-local-prefix=$GCC_PREFIX \
-	  --target=x86_64-w64-mingw32 \
+	  --target=x86_64-$vendor-mingw32 \
 	  --enable-languages=c,c++,d,lto \
     --enable-sjlj-exceptions \
 	  --enable-lto \
