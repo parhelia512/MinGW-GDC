@@ -10,15 +10,20 @@ GDC_VERSION="6296cfbe9756572e6d91e83e5d786ce5477fcb1b"
 
 set -e
 
-export PATH="/usr/local/bin:/usr/bin:/bin"
+if echo $PATH | grep " " ; then
+  echo "Your PATH contain spaces, this may cause build issues when compiling binutils"
+  echo "Please clean your PATH and retry"
+  exit 3
+fi
 
-BUILD=$($root/config.guess)
+BUILD=$($root/config.guess | sed 's/-unknown-msys$/-pc-mingw32/')
+echo "Build type: $BUILD"
 
 export CFLAGS="-O2"
 export CXXFLAGS="-O2"
 export LDFLAGS="-s"
 
-#trap "bash" EXIT
+#trap "echo 'Spawning a rescue shell in current build directory'; bash" EXIT
 
 CROSSDEV=$1
 vendor="ace"
@@ -146,6 +151,24 @@ function lazy_download
 	fi
 }
 
+function lazy_extract
+{
+  local archive="$1"
+  echo -n "Extracting $archive ... "
+  local name=$(basename $archive .tar.gz)
+  name=$(basename $name .tar.bz2)
+
+	if [ -d $name ]; then
+    echo "already extracted"
+  else
+    rm -rf ${name}.tmp
+    mkdir ${name}.tmp
+		tar -C ${name}.tmp -xlf "$CACHE/$archive"  --strip-components=1
+    mv ${name}.tmp $name
+    echo "ok"
+  fi
+}
+
 # Download and install x86-64 build tools
 
 function install_build_tools
@@ -177,68 +200,43 @@ function install_build_tools
 # Configure x86-64 build environment
 gcc -v
 
-
-# Extracts archive and converts to git repo.
-# If git repo exists, resets
-# $1 - archive
-# $2 - path, for now, must equal what the archive extracts to
+# Create or restore a directory content
 function mkgit {
-	return
-	if [ ! -d "$2" ]; then
-		# Determine archive type
-		ext="${$1##*.}"
-		switch $ext
-		tar -xlf $1
-		cd $2
+  dir="$1"
 
-		# prune unnecessary folders.
-		git init
-		git config user.email "nobody@localhost"
-		git config user.name "Nobody"
-		git config core.autocrlf false
-		git add -f *
-		git commit -am "MinGW/GDC restore point"
-		cd ..
-	else
-		cd $2
-		git reset --hard
-		git clean -f
-		cd ..
-	fi
+  pushd "$dir"
+  if [ ! -d ".git" ]; then
+    echo "Creating git for $dir"
+    # prune unnecessary folders.
+    git init
+    git config user.email "nobody@localhost"
+    git config user.name "Nobody"
+    git config core.autocrlf false
+    git add -f *
+    git commit -m "MinGW/GDC restore point"
+  else
+    echo "Restoring $dir from git restore point"
+    git reset --hard
+    git clean -f
+  fi
+  popd
 }
 
 # Compile binutils
-mkgit binutils-2.23.2.tar.gz binutils-2.23.2
+
+lazy_download "$CACHE/binutils-2.23.2.tar.gz" "http://ftp.gnu.org/gnu/binutils/binutils-2.23.2.tar.gz"
+lazy_extract "binutils-2.23.2.tar.gz"
+mkgit "binutils-2.23.2"
 
 if [ ! -e binutils-2.23.2/build/.built ]; then
 
-  lazy_download "$CACHE/binutils-2.23.2.tar.gz" "http://ftp.gnu.org/gnu/binutils/binutils-2.23.2.tar.gz"
-
-	#mkgit binutils-2.23.2.tar.gz binutils-2.23.2
-	if [ ! -d "binutils-2.23.2" ]; then
-		tar -xlf $CACHE/binutils-2.23.2.tar.gz
-		cd binutils-2.23.2
-		# prune unnecessary folders.
-		git init
-		git config user.email "nobody@localhost"
-		git config user.name "Nobody"
-		git config core.autocrlf false
-		git add *
-		git commit -m "MinGW/GDC restore point"
-		cd ..
-	else
-		cd binutils-2.23.2
-		git reset --hard
-		git clean -f
-		cd ..
-	fi
-	pushd binutils-2.23.2
-	patch -p1 < $root/patches/mingw-tls-binutils-2.23.1.patch
-	sed "s/^%.*//" -i bfd/doc/bfd.texinfo
-	sed "s/^%.*//" -i ld/ld.texinfo
-	mkdir -p build
-	cd build
-	../configure \
+  pushd binutils-2.23.2
+  patch -p1 < $root/patches/mingw-tls-binutils-2.23.1.patch
+  sed "s/^%.*//" -i bfd/doc/bfd.texinfo
+  sed "s/^%.*//" -i ld/ld.texinfo
+  mkdir -p build
+  cd build
+  ../configure \
     --prefix=$CROSSDEV/gdc-4.8/release \
     --build=$BUILD \
     --target=x86_64-$vendor-mingw32 \
@@ -257,24 +255,9 @@ export PATH="$GCC_PREFIX/bin:$PATH"
 function build_runtime
 {
   lazy_download "$CACHE/mingw-w64-v3.0.0.tar.bz2" "http://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2/download"
+  lazy_extract "mingw-w64-v3.0.0.tar.bz2"
+  mkgit "mingw-w64-v3.0.0"
 
-  if [ ! -d "mingw-w64-v3.0.0" ]; then
-    tar -xlf $CACHE/mingw-w64-v3.0.0.tar.bz2
-    cd mingw-w64-v3.0.0
-    # prune unnecessary folders.
-    git init
-    git config user.email "nobody@localhost"
-    git config user.name "Nobody"
-    git config core.autocrlf false
-    git add *
-    git commit -am "MinGW/GDC restore point"
-    cd ..
-  else
-    cd mingw-w64-v3.0.0
-    git reset --hard
-    git clean -f
-    cd ..
-  fi
   pushd mingw-w64-v3.0.0
 
   echo "********************************************************************************"
@@ -315,24 +298,8 @@ function build_runtime
 if [ ! -e gmp-4.3.2/build/.built ]; then
 
   lazy_download "$CACHE/gmp-4.3.2.tar.bz2" "http://ftp.gnu.org/gnu/gmp/gmp-4.3.2.tar.bz2"
-
-	if [ ! -d "gmp-4.3.2" ]; then
-		tar -xlf $CACHE/gmp-4.3.2.tar.bz2
-		cd gmp-4.3.2
-		# prune unnecessary folders.
-		git init
-		git config user.email "nobody@localhost"
-		git config user.name "Nobody"
-		git config core.autocrlf false
-		git add *
-		git commit -am "MinGW/GDC restore point"
-		cd ..
-	else
-		cd gmp-4.3.2
-		git reset --hard
-		git clean -f
-		cd ..
-	fi
+  lazy_extract "gmp-4.3.2.tar.bz2"
+  mkgit "gmp-4.3.2"
 
 	pushd gmp-4.3.2
 	patch -p1 < $root/patches/gmp-4.3.2-w64.patch
@@ -355,24 +322,8 @@ fi
 if [ ! -e mpfr-3.1.1/build/.built ]; then
 
   lazy_download "$CACHE/mpfr-3.1.1.tar.bz2" "http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.1.tar.bz2"
-
-	if [ ! -d "mpfr-3.1.1" ]; then
-		tar -xlf $CACHE/mpfr-3.1.1.tar.bz2
-		cd mpfr-3.1.1
-		# prune unnecessary folders.
-		git init
-		git config user.email "nobody@localhost"
-		git config user.name "Nobody"
-		git config core.autocrlf false
-		git add *
-		git commit -am "MinGW/GDC restore point"
-		cd ..
-	else
-		cd mpfr-3.1.1
-		git reset --hard
-		git clean -f
-		cd ..
-	fi
+  lazy_extract "mpfr-3.1.1.tar.bz2"
+  mkgit "mpfr-3.1.1"
 
 	pushd mpfr-3.1.1
 
@@ -485,26 +436,8 @@ fi
 if [ ! -e cloog-0.18.0/build/.built ]; then
 
   lazy_download "$CACHE/cloog-0.18.0.tar.gz" "ftp://gcc.gnu.org/pub/gcc/infrastructure/cloog-0.18.0.tar.gz"
-
-	#mkgit cloog-0.18.0.tar.gz cloog-0.18.0
-	if [ ! -d "cloog-0.18.0" ]; then
-		tar -xlf $CACHE/cloog-0.18.0.tar.gz
-		cd cloog-0.18.0
-
-		# prune unnecessary folders.
-		git init
-		git config user.email "nobody@localhost"
-		git config user.name "Nobody"
-		git config core.autocrlf false
-		git add -f *
-		git commit -am "MinGW/GDC restore point"
-		cd ..
-	else
-		cd cloog-0.18.0
-		git reset --hard
-		git clean -f
-		cd ..
-	fi
+  lazy_extract "cloog-0.18.0.tar.gz"
+  mkgit "cloog-0.18.0"
 
 	pushd cloog-0.18.0
 
@@ -569,27 +502,8 @@ function download_gdc {
 function download_gcc {
 
   lazy_download "$CACHE/gcc-4.8.1.tar.bz2" "http://ftp.gnu.org/gnu/gcc/gcc-4.8.1/gcc-4.8.1.tar.bz2"
-
-	# Extract and configure a git repo to allow fast restoration for future builds.
-	# mkgit gcc-4.8.1.tar.bz2 gcc-4.8.1
-	if [ ! -d "gcc-4.8.1" ]; then
-		tar --exclude=libjava -xlf $CACHE/gcc-4.8.1.tar.bz2
-		cd gcc-4.8.1
-		# prune unnecessary folders.
-		git init
-		git config user.email "nobody@localhost"
-		git config user.name "Nobody"
-		git config core.autocrlf false
-		git add *
-		git commit -am "MinGW/GDC restore point"
-		git tag mingw_build
-		cd ..
-	else
-		cd gcc-4.8.1
-		git reset --hard mingw_build
-		git clean -f -d
-		cd ..
-	fi
+  lazy_extract "gcc-4.8.1.tar.bz2"
+  mkgit "gcc-4.8.1"
 }
 
 # Setup GDC and compile
