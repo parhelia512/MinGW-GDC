@@ -573,7 +573,7 @@ function download_gcc {
 	# Extract and configure a git repo to allow fast restoration for future builds.
 	# mkgit gcc-4.8.1.tar.bz2 gcc-4.8.1
 	if [ ! -d "gcc-4.8.1" ]; then
-		tar -xlf $CACHE/gcc-4.8.1.tar.bz2
+		tar --exclude=libjava -xlf $CACHE/gcc-4.8.1.tar.bz2
 		cd gcc-4.8.1
 		# prune unnecessary folders.
 		git init
