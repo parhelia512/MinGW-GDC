@@ -14,6 +14,10 @@ export PATH="/usr/local/bin:/usr/bin:/bin"
 
 BUILD=$($root/config.guess)
 
+export CFLAGS="-O2"
+export CXXFLAGS="-O2"
+export LDFLAGS="-s"
+
 #trap "bash" EXIT
 
 CROSSDEV=$1
@@ -240,9 +244,7 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
     --target=x86_64-$vendor-mingw32 \
     --disable-nls \
     --disable-multilib \
-    --disable-bootstrap \
-	  CFLAGS="-O2" \
-    LDFLAGS="-s"
+    --disable-bootstrap
 	$MAKE
   $MAKE install
 	touch .built
@@ -342,7 +344,7 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
     --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
     --build=$BUILD \
 	  --enable-cxx --disable-static --enable-shared \
-	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s" ABI=64
+	  ABI=64
 	$MAKE && $MAKE install
 	cd ..
 	touch .built
@@ -378,12 +380,13 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
 	mkdir -p build/64
 	pushd build/64
 	#export PATH="$(PATH):$(GMP_STAGE)/64/bin"
+  CFLAGS+="-I$CROSSDEV/gdc-4.8/gmp-4.3.2/64/include" \
+  LDFLAGS+="-L$CROSSDEV/gdc-4.8/gmp-4.3.2/64/lib" \
 	../../configure \
     --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
     --build=$BUILD \
-	  --disable-static --enable-shared \
-	  CFLAGS="-O2 -I$CROSSDEV/gdc-4.8/gmp-4.3.2/64/include" \
-	  LDFLAGS="-s -L$CROSSDEV/gdc-4.8/gmp-4.3.2/64/lib"
+	  --disable-static \
+    --enable-shared
 	$MAKE
   $MAKE install
   popd
@@ -426,8 +429,7 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
     --build=$BUILD \
 	  --disable-static --enable-shared \
 	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
-	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
-	  CFLAGS="-O2" LDFLAGS="-s"
+	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64
   $MAKE
   $MAKE install
 	cd ..
@@ -470,8 +472,7 @@ if [ ! -e isl-0.11.1/build/.built ]; then
     --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
     --build=$BUILD \
 	  --enable-shared \
-	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
-	  CFLAGS="-O2" LDFLAGS="-s"
+	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64
 	  $MAKE
     $MAKE install
 	cd ..
@@ -516,8 +517,7 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 	  --disable-static \
     --enable-shared \
 	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
-      --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
-	  CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-s"
+      --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64
 	$MAKE
   $MAKE install
 	cd ..
