@@ -60,7 +60,7 @@ function isMissing
 
 if isMissing "wget"; then
 	echo "wget not installed.  Please install with:"
-	echo "mingw-get install msys-wget"
+	echo "pacman -S msys-wget"
   echo "or"
 	echo "apt-get install wget"
 	exit 1
@@ -68,7 +68,7 @@ fi
 
 if isMissing "unzip"; then
 	echo "unzip not installed.  Please install with:"
-	echo "mingw-get install msys-unzip"
+	echo "pacman -S msys/unzip"
   echo "or"
 	echo "apt-get install unzip"
 	exit 1
@@ -522,7 +522,7 @@ function build_gdc_host {
 	# Should use git am
 	for patch in $(find $root/patches/gdc -type f ); do
 		echo "Patching $patch"
-		git am $patch || exit
+		patch -p1 -i $patch || exit
 	done
 
 	./setup-gcc.sh ../gcc-4.8.1
