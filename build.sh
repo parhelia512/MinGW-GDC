@@ -3,6 +3,13 @@
 
 root=$(pwd)
 
+function printMsg
+{
+  echo -n "[32m"
+  echo $*
+  echo -n "[0m"
+}
+
 # Which branch to build against
 GDC_BRANCH="gdc-4.8"
 # Force a GDC Revision.  Empty uses head.
@@ -17,13 +24,13 @@ if echo $PATH | grep " " ; then
 fi
 
 BUILD=$($root/config.guess | sed 's/-unknown-msys$/-pc-mingw32/')
-echo "Build type: $BUILD"
+printMsg "Build type: $BUILD"
 
 export CFLAGS="-O2"
 export CXXFLAGS="-O2"
 export LDFLAGS="-s"
 
-#trap "echo 'Spawning a rescue shell in current build directory'; bash" EXIT
+#trap "printMsg 'Spawning a rescue shell in current build directory'; bash" EXIT
 
 CROSSDEV=$1
 vendor="ace"
@@ -34,7 +41,7 @@ fi
 
 export GCC_PREFIX="$CROSSDEV/gdc-4.8/release"
 
-echo "Building in $CROSSDEV"
+printMsg "Building in: $CROSSDEV"
 
 CACHE=$CROSSDEV/cache
 mkdir -p $CROSSDEV/gdc-4.8/src
@@ -206,7 +213,7 @@ function mkgit {
 
   pushd "$dir"
   if [ ! -d ".git" ]; then
-    echo "Creating git for $dir"
+    printMsg "Creating git for $dir"
     # prune unnecessary folders.
     git init
     git config user.email "nobody@localhost"
@@ -215,7 +222,7 @@ function mkgit {
     git add -f *
     git commit -m "MinGW/GDC restore point"
   else
-    echo "Restoring $dir from git restore point"
+    printMsg "Restoring $dir from git restore point"
     git reset --hard
     git clean -f
   fi
@@ -260,8 +267,8 @@ function build_runtime
 
   pushd mingw-w64-v3.0.0
 
-  echo "********************************************************************************"
-  echo "Building runtime headers"
+  printMsg "********************************************************************************"
+  printMsg "Building runtime headers"
   pushd mingw-w64-headers
   mkdir -p build
   cd build
@@ -276,8 +283,8 @@ function build_runtime
   fi
   popd
 
-  echo "********************************************************************************"
-  echo "Building runtime CRT"
+  printMsg "********************************************************************************"
+  printMsg "Building runtime CRT"
   pushd mingw-w64-crt
   mkdir -p build
   cd build
@@ -291,8 +298,8 @@ function build_runtime
   fi
   popd
 
-  echo "********************************************************************************"
-  echo "Building pthreads"
+  printMsg "********************************************************************************"
+  printMsg "Building pthreads"
   pushd mingw-w64-libraries/winpthreads
   mkdir -p build
   cd build
@@ -537,7 +544,7 @@ function build_gdc_host {
 	#patch -p1 < $root/patches/mingw-gdc-remove-main-from-dmain2.patch
 	# Should use git am
 	for patch in $(find $root/patches/gdc -type f ); do
-		echo "Patching $patch"
+		printMsg "Patching $patch"
 		patch -p1 -i $patch || exit
 	done
 
@@ -549,7 +556,7 @@ function build_gdc_host {
 
 	# Should use git am
 	for patch in $(find $root/patches/gcc -type f ); do
-		echo "Patching $patch"
+		printMsg "Patching $patch"
 		git am $patch || exit
 	done
 
