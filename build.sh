@@ -291,6 +291,22 @@ function build_runtime
   fi
   popd
 
+  echo "********************************************************************************"
+  echo "Building pthreads"
+  pushd mingw-w64-libraries/winpthreads
+  mkdir -p build
+  cd build
+  if [ ! -e .built ] ; then
+    ../configure \
+      --prefix=$CROSSDEV/gdc-4.8/release/x86_64-$vendor-mingw32 \
+      --build=$BUILD \
+      --host=x86_64-$vendor-mingw32
+    $MAKE
+    $MAKE install
+    touch .built
+  fi
+  popd
+
   popd
 }
 
