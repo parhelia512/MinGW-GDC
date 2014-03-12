@@ -66,83 +66,83 @@ function isMissing
 }
 
 if isMissing "wget"; then
-	echo "wget not installed.  Please install with:"
-	echo "pacman -S msys-wget"
+  echo "wget not installed.  Please install with:"
+  echo "pacman -S msys-wget"
   echo "or"
-	echo "apt-get install wget"
-	exit 1
+  echo "apt-get install wget"
+  exit 1
 fi
 
 if isMissing "unzip"; then
-	echo "unzip not installed.  Please install with:"
-	echo "pacman -S msys/unzip"
+  echo "unzip not installed.  Please install with:"
+  echo "pacman -S msys/unzip"
   echo "or"
-	echo "apt-get install unzip"
-	exit 1
+  echo "apt-get install unzip"
+  exit 1
 fi
 
 if isMissing "tar"; then
-	echo "tar not installed.  Please install with:"
-	echo "mingw-get install tar"
+  echo "tar not installed.  Please install with:"
+  echo "mingw-get install tar"
   echo "or"
-	echo "apt-get install tar"
-	exit 1
+  echo "apt-get install tar"
+  exit 1
 fi
 
 if isMissing "patch"; then
-	echo "patch not installed.  Please install with:"
-	echo "mingw-get install patch"
+  echo "patch not installed.  Please install with:"
+  echo "mingw-get install patch"
   echo "or"
-	echo "apt-get install patch"
-	exit 1
+  echo "apt-get install patch"
+  exit 1
 fi
 
 if isMissing "7za" ; then
-	echo "7za not installed.  Please install with:"
-	echo "pacman -S p7zip"
+  echo "7za not installed.  Please install with:"
+  echo "pacman -S p7zip"
   echo "or"
-	echo "apt-get install p7zip-full"
-	exit 1
+  echo "apt-get install p7zip-full"
+  exit 1
 fi
 
 if isMissing "gcc" ; then
-	echo "gcc not installed.  Please install with:"
-	echo "pacman -S mingw-gcc"
+  echo "gcc not installed.  Please install with:"
+  echo "pacman -S mingw-gcc"
   echo "or"
-	echo "apt-get install gcc"
-	exit 1
+  echo "apt-get install gcc"
+  exit 1
 fi
 
 if isMissing "git" ; then
-	echo "git not installed.  Please install with:"
-	echo "pacman -S mingw-git"
+  echo "git not installed.  Please install with:"
+  echo "pacman -S mingw-git"
   echo "or"
-	echo "apt-get install git"
-	exit 1
+  echo "apt-get install git"
+  exit 1
 fi
 
 if isMissing "cmp" ; then
-	echo "cmp not installed.  Please install with:"
-	echo "pacman -S diffutils"
+  echo "cmp not installed.  Please install with:"
+  echo "pacman -S diffutils"
   echo "or"
-	echo "apt-get install something"
-	exit 1
+  echo "apt-get install something"
+  exit 1
 fi
 
 if isMissing "flex" ; then
-	echo "flex not installed.  Please install with:"
-	echo "pacman -S flex"
+  echo "flex not installed.  Please install with:"
+  echo "pacman -S flex"
   echo "or"
-	echo "apt-get install flex"
-	exit 1
+  echo "apt-get install flex"
+  exit 1
 fi
 
 if isMissing "bison" ; then
-	echo "bison not installed.  Please install with:"
-	echo "pacman -S bison"
+  echo "bison not installed.  Please install with:"
+  echo "pacman -S bison"
   echo "or"
-	echo "apt-get install bison"
-	exit 1
+  echo "apt-get install bison"
+  exit 1
 fi
 
 pushd $CROSSDEV/gdc-4.8/src
@@ -152,10 +152,10 @@ function lazy_download
   local file="$1"
   local url="$2"
 
-	if [ ! -e "$file" ]; then
-		wget "$url" -c -O "${file}.tmp"
+  if [ ! -e "$file" ]; then
+    wget "$url" -c -O "${file}.tmp"
     mv "${file}.tmp" "$file"
-	fi
+  fi
 }
 
 function lazy_extract
@@ -165,12 +165,12 @@ function lazy_extract
   local name=$(basename $archive .tar.gz)
   name=$(basename $name .tar.bz2)
 
-	if [ -d $name ]; then
+  if [ -d $name ]; then
     echo "already extracted"
   else
     rm -rf ${name}.tmp
     mkdir ${name}.tmp
-		tar -C ${name}.tmp -xlf "$CACHE/$archive"  --strip-components=1
+    tar -C ${name}.tmp -xlf "$CACHE/$archive"  --strip-components=1
     mv ${name}.tmp $name
     echo "ok"
   fi
@@ -193,13 +193,13 @@ function install_build_tools
   mkdir -p $CROSSDEV/gdc-4.8/release/bin
 
   lazy_download "$CACHE/libiconv-1.14-3-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/libiconv/libiconv-1.14-3/libiconv-1.14-3-mingw32-dll.tar.lzma/download"
-  #	tar --lzma -xvf $CACHE/libiconv-1.14-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
+  # tar --lzma -xvf $CACHE/libiconv-1.14-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
 
   lazy_download "$CACHE/gettext-0.18.3.1-1-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/gettext/gettext-0.18.3.1-1/gettext-0.18.3.1-1-mingw32-dll.tar.lzma/download"
-  #	tar --lzma -xvf $CACHE/gettext-0.18.3.1-1-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
+  # tar --lzma -xvf $CACHE/gettext-0.18.3.1-1-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
 
   lazy_download "$CACHE/gcc-core-4.8.1-3-mingw32-dll.tar.lzma" "http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.1-3/gcc-core-4.8.1-3-mingw32-dll.tar.lzma"
-  #	tar --lzma -xvf $CACHE/gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release bin/libgcc_s_dw2-1.dll
+  # tar --lzma -xvf $CACHE/gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release bin/libgcc_s_dw2-1.dll
 }
 
 #install_build_tools
@@ -250,10 +250,10 @@ if [ ! -e binutils-2.23.2/build/.built ]; then
     --disable-nls \
     --disable-multilib \
     --disable-bootstrap
-	$MAKE
+  $MAKE
   $MAKE install
-	touch .built
-	popd
+  touch .built
+  popd
 fi
 
 # Add binutils to PATH
@@ -324,21 +324,23 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
   lazy_extract "gmp-4.3.2.tar.bz2"
   mkgit "gmp-4.3.2"
 
-	pushd gmp-4.3.2
-	patch -p1 < $root/patches/gmp-4.3.2-w64.patch
+  pushd gmp-4.3.2
+  patch -p1 < $root/patches/gmp-4.3.2-w64.patch
 
-	# Make 64
-	mkdir -p build/64
-	cd build/64
-	../../configure \
+  # Make 64
+  mkdir -p build/64
+  cd build/64
+  ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
     --build=$BUILD \
-	  --enable-cxx --disable-static --enable-shared \
-	  ABI=64
-	$MAKE && $MAKE install
-	cd ..
-	touch .built
-	popd
+    --enable-cxx \
+    --disable-static \
+    --enable-shared \
+    ABI=64
+  $MAKE && $MAKE install
+  cd ..
+  touch .built
+  popd
 fi
 
 # Compile MPFR
@@ -348,25 +350,25 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
   lazy_extract "mpfr-3.1.1.tar.bz2"
   mkgit "mpfr-3.1.1"
 
-	pushd mpfr-3.1.1
+  pushd mpfr-3.1.1
 
-	# Make 64
-	mkdir -p build/64
-	pushd build/64
-	#export PATH="$(PATH):$(GMP_STAGE)/64/bin"
+  # Make 64
+  mkdir -p build/64
+  pushd build/64
+  #export PATH="$(PATH):$(GMP_STAGE)/64/bin"
   CFLAGS+="-I$CROSSDEV/gdc-4.8/gmp-4.3.2/64/include" \
   LDFLAGS+="-L$CROSSDEV/gdc-4.8/gmp-4.3.2/64/lib" \
-	../../configure \
+  ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
     --build=$BUILD \
-	  --disable-static \
+    --disable-static \
     --enable-shared
-	$MAKE
+  $MAKE
   $MAKE install
   popd
 
-	touch build/.built
-	popd
+  touch build/.built
+  popd
 fi
 
 # Compile MPC
@@ -374,42 +376,43 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
 
   lazy_download "$CACHE/mpc-1.0.1.tar.gz" http://ftp.gnu.org/gnu/mpc/mpc-1.0.1.tar.gz
 
-	if [ ! -d "mpc-1.0.1" ]; then
-		tar -xlf $CACHE/mpc-1.0.1.tar.gz
-		cd mpc-1.0.1
-		# prune unnecessary folders.
-		git init
-		git config user.email "nobody@localhost"
-		git config user.name "Nobody"
-		git config core.autocrlf false
-		git add *
-		git commit -am "MinGW/GDC restore point"
-		cd ..
-	else
-		cd mpc-1.0.1
-		git reset --hard
-		git clean -f
-		cd ..
-	fi
+  if [ ! -d "mpc-1.0.1" ]; then
+    tar -xlf $CACHE/mpc-1.0.1.tar.gz
+    cd mpc-1.0.1
+    # prune unnecessary folders.
+    git init
+    git config user.email "nobody@localhost"
+    git config user.name "Nobody"
+    git config core.autocrlf false
+    git add *
+    git commit -am "MinGW/GDC restore point"
+    cd ..
+  else
+    cd mpc-1.0.1
+    git reset --hard
+    git clean -f
+    cd ..
+  fi
 
 
-	pushd mpc-1.0.1
+  pushd mpc-1.0.1
 
-	# Make 64
-	mkdir -p build/64
-	cd build/64
+  # Make 64
+  mkdir -p build/64
+  cd build/64
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/mpc-1.0.1/64 \
     --build=$BUILD \
-	  --disable-static --enable-shared \
-	  --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
-	  --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64
+    --disable-static \
+    --enable-shared \
+    --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+    --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64
   $MAKE
   $MAKE install
-	cd ..
+  cd ..
 
-	touch .built
-	popd
+  touch .built
+  popd
 fi
 
 # Compile ISL
@@ -417,42 +420,42 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 
   lazy_download "$CACHE/isl-0.11.1.tar.bz2" "ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-0.11.1.tar.bz2"
 
-	#mkgit isl-0.11.1.tar.bz2 isl-0.11.1
-	if [ ! -d "isl-0.11.1" ]; then
-		tar -xlf $CACHE/isl-0.11.1.tar.bz2
-		cd isl-0.11.1
+  #mkgit isl-0.11.1.tar.bz2 isl-0.11.1
+  if [ ! -d "isl-0.11.1" ]; then
+    tar -xlf $CACHE/isl-0.11.1.tar.bz2
+    cd isl-0.11.1
 
-		# prune unnecessary folders.
-		git init
-		git config user.email "nobody@localhost"
-		git config user.name "Nobody"
-		git config core.autocrlf false
-		git add *
-		git commit -am "MinGW/GDC restore point"
-		cd ..
-	else
-		cd isl-0.11.1
-		git reset --hard
-		git clean -f
-		cd ..
-	fi
+    # prune unnecessary folders.
+    git init
+    git config user.email "nobody@localhost"
+    git config user.name "Nobody"
+    git config core.autocrlf false
+    git add *
+    git commit -am "MinGW/GDC restore point"
+    cd ..
+  else
+    cd isl-0.11.1
+    git reset --hard
+    git clean -f
+    cd ..
+  fi
 
-	pushd isl-0.11.1
+  pushd isl-0.11.1
 
-	# Make 64
-	mkdir -p build/64
-	cd build/64
-	../../configure \
+  # Make 64
+  mkdir -p build/64
+  cd build/64
+  ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
     --build=$BUILD \
-	  --enable-shared \
-	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64
-	  $MAKE
+    --enable-shared \
+    --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64
+    $MAKE
     $MAKE install
-	cd ..
+  cd ..
 
-	touch .built
-	popd
+  touch .built
+  popd
 fi
 
 # Compile CLOOG
@@ -462,23 +465,23 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
   lazy_extract "cloog-0.18.0.tar.gz"
   mkgit "cloog-0.18.0"
 
-	pushd cloog-0.18.0
+  pushd cloog-0.18.0
 
-	# Build 64
-	mkdir -p build/64
-	cd build/64
-	../../configure \
+  # Build 64
+  mkdir -p build/64
+  cd build/64
+  ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/64 \
     --build=$BUILD \
-	  --disable-static \
+    --disable-static \
     --enable-shared \
-	  --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
-      --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64
-	$MAKE
+    --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+    --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64
+  $MAKE
   $MAKE install
-	cd ..
-	touch .built
-	popd
+  cd ..
+  touch .built
+  popd
 fi
 
 # Copy runtime files to release
@@ -492,7 +495,7 @@ MPC_STAGE=$CROSSDEV/gdc-4.8/mpc-1.0.1/
 ISL_STAGE=$CROSSDEV/gdc-4.8/isl-0.11.1/
 CLOOG_STAGE=$CROSSDEV/gdc-4.8/cloog-0.18.0/
 
-cp -Rp $GMP_STAGE/64/*		$GCC_PREFIX/x86_64-$vendor-mingw32/
+cp -Rp $GMP_STAGE/64/*    $GCC_PREFIX/x86_64-$vendor-mingw32/
 cp -Rp $MPFR_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
 cp -Rp $MPC_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
 cp -Rp $ISL_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
@@ -502,24 +505,24 @@ cp -Rp $CLOOG_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
 
 function download_gdc {
 
-	# Clone and configure GDC
-	if [ ! -d "GDC" ]; then
-		git clone https://github.com/D-Programming-GDC/GDC.git -b $GDC_BRANCH
-	else
-		cd GDC
-		git fetch
-		git reset --hard origin/$GDC_BRANCH
-		git clean -f -d
-		cd ..
-	fi
+  # Clone and configure GDC
+  if [ ! -d "GDC" ]; then
+    git clone https://github.com/D-Programming-GDC/GDC.git -b $GDC_BRANCH
+  else
+    cd GDC
+    git fetch
+    git reset --hard origin/$GDC_BRANCH
+    git clean -f -d
+    cd ..
+  fi
 
-	pushd GDC
+  pushd GDC
 
-	if [ "$GDC_VERSION" != "" ]; then
-		git checkout $GDC_VERSION
-	fi
+  if [ "$GDC_VERSION" != "" ]; then
+    git checkout $GDC_VERSION
+  fi
 
-	popd
+  popd
 }
 
 function download_gcc {
@@ -539,59 +542,59 @@ function build_gdc_host {
   download_gcc
   download_gdc
 
-	pushd GDC
-	#patch -p1 < $root/patches/mingw-gdc.patch
-	#patch -p1 < $root/patches/mingw-gdc-remove-main-from-dmain2.patch
-	# Should use git am
-	for patch in $(find $root/patches/gdc -type f ); do
-		printMsg "Patching $patch"
-		patch -p1 -i $patch
-	done
+  pushd GDC
+  #patch -p1 < $root/patches/mingw-gdc.patch
+  #patch -p1 < $root/patches/mingw-gdc-remove-main-from-dmain2.patch
+  # Should use git am
+  for patch in $(find $root/patches/gdc -type f ); do
+    printMsg "Patching $patch"
+    patch -p1 -i $patch
+  done
 
-	./setup-gcc.sh ../gcc-4.8.1
-	popd
+  ./setup-gcc.sh ../gcc-4.8.1
+  popd
 
-	pushd gcc-4.8.1
-	patch -p1 < $root/patches/mingw-tls-gcc-4.8.patch
+  pushd gcc-4.8.1
+  patch -p1 < $root/patches/mingw-tls-gcc-4.8.patch
 
-	# Should use git am
-	for patch in $(find $root/patches/gcc -type f ); do
-		printMsg "Patching $patch"
-		patch -p1 -i $patch
-	done
+  # Should use git am
+  for patch in $(find $root/patches/gcc -type f ); do
+    printMsg "Patching $patch"
+    patch -p1 -i $patch
+  done
 
-	# Build GCC
-	mkdir -p build
-	cd build
+  # Build GCC
+  mkdir -p build
+  cd build
 
-	# Must build GCC using patched mingwrt
-	export LPATH="$GCC_PREFIX/lib;$GCC_PREFIX/x86_64-$vendor-mingw32/lib"
-	export CPATH="$GCC_PREFIX/include;$GCC_PREFIX/x86_64-$vendor-mingw32/include"
-	#export BOOT_CFLAGS="-static-libgcc -static"
-	../configure \
+  # Must build GCC using patched mingwrt
+  export LPATH="$GCC_PREFIX/lib;$GCC_PREFIX/x86_64-$vendor-mingw32/lib"
+  export CPATH="$GCC_PREFIX/include;$GCC_PREFIX/x86_64-$vendor-mingw32/include"
+  #export BOOT_CFLAGS="-static-libgcc -static"
+  ../configure \
     --prefix=$GCC_PREFIX \
     --build=$BUILD \
     --with-local-prefix=$GCC_PREFIX \
-	  --target=x86_64-$vendor-mingw32 \
-	  --enable-languages=c,c++,d,lto \
+    --target=x86_64-$vendor-mingw32 \
+    --enable-languages=c,c++,d,lto \
     --enable-sjlj-exceptions \
-	  --enable-lto \
+    --enable-lto \
     --disable-nls \
     --disable-multilib \
-	  --disable-win32-registry \
+    --disable-win32-registry \
     --with-gnu-ld \
     --disable-bootstrap
-	$MAKE all-host
+  $MAKE all-host
   $MAKE install-host
   touch .built
-	popd
+  popd
 }
 
 function build_gdc_target {
-	pushd gcc-4.8.1/build
-	$MAKE all-target
+  pushd gcc-4.8.1/build
+  $MAKE all-target
   $MAKE install-target
-	popd
+  popd
 }
 
 build_gdc_host
@@ -603,11 +606,11 @@ exit 0
 
 # get DMD script
 if [ ! -d "GDMD" ]; then
-	git clone https://github.com/D-Programming-GDC/GDMD.git
+  git clone https://github.com/D-Programming-GDC/GDMD.git
 else
-	cd GDMD
-	git pull
-	cd ..
+  cd GDMD
+  git pull
+  cd ..
 fi
 pushd GDMD
 #Ok to fail. results in testsuite not running
@@ -623,23 +626,24 @@ popd
 echo -n "Checking for gdmd.exe..."
 gdmd=$(which gdmd.exe 2>/dev/null)
 if [ ! "$gdmd" ]; then
-	echo "Unable to run DMD testsuite. gdmd.exe failed to compile"
-	exit 1
+  echo "Unable to run DMD testsuite. gdmd.exe failed to compile"
+  exit 1
 fi
 
 # Run testsuite via dmd
 echo "dmd cloning"
 if [ ! -d "dmd" ]; then
-	git clone https://github.com/D-Programming-Language/dmd.git -b 2.062
+  git clone https://github.com/D-Programming-Language/dmd.git -b 2.062
 else
-	cd dmd
-	git reset --hard
-	git clean -f
-	git pull
-	# Reset RPO
-	cd ..
+  cd dmd
+  git reset --hard
+  git clean -f
+  git pull
+  # Reset RPO
+  cd ..
 fi
 pushd dmd/test
 patch -p2 < $root/patches/mingw-testsuite.patch
 $MAKE
 pushd
+
