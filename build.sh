@@ -334,8 +334,8 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
     --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
     --build=$BUILD \
     --enable-cxx \
-    --disable-static \
-    --enable-shared \
+    --enable-static \
+    --disable-shared \
     ABI=64
   $MAKE && $MAKE install
   cd ..
@@ -355,14 +355,13 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
   # Make 64
   mkdir -p build/64
   pushd build/64
-  #export PATH="$(PATH):$(GMP_STAGE)/64/bin"
-  CFLAGS+="-I$CROSSDEV/gdc-4.8/gmp-4.3.2/64/include" \
-  LDFLAGS+="-L$CROSSDEV/gdc-4.8/gmp-4.3.2/64/lib" \
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
     --build=$BUILD \
     --disable-static \
-    --enable-shared
+    --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+    --enable-static \
+    --disable-shared
   $MAKE
   $MAKE install
   popd
@@ -403,8 +402,8 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/mpc-1.0.1/64 \
     --build=$BUILD \
-    --disable-static \
-    --enable-shared \
+    --enable-static \
+    --disable-shared \
     --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
     --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64
   $MAKE
@@ -448,7 +447,8 @@ if [ ! -e isl-0.11.1/build/.built ]; then
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
     --build=$BUILD \
-    --enable-shared \
+    --enable-static \
+    --disable-shared \
     --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64
     $MAKE
     $MAKE install
@@ -473,8 +473,8 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/64 \
     --build=$BUILD \
-    --disable-static \
-    --enable-shared \
+    --enable-static \
+    --disable-shared \
     --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
     --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64
   $MAKE
@@ -577,6 +577,9 @@ function build_gdc_host {
     --with-local-prefix=$GCC_PREFIX \
     --target=x86_64-$vendor-mingw32 \
     --enable-languages=c,c++,d,lto \
+    --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+    --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
+    --with-mpc=$CROSSDEV/gdc-4.8/mpc-1.0.1/64 \
     --enable-sjlj-exceptions \
     --enable-lto \
     --disable-nls \
@@ -601,6 +604,7 @@ build_gdc_host
 build_runtime
 build_gdc_target
 
+trap - EXIT
 exit 0
 
 
