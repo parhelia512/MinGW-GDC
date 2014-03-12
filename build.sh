@@ -545,7 +545,7 @@ function build_gdc_host {
 	# Should use git am
 	for patch in $(find $root/patches/gdc -type f ); do
 		printMsg "Patching $patch"
-		patch -p1 -i $patch || exit
+		patch -p1 -i $patch
 	done
 
 	./setup-gcc.sh ../gcc-4.8.1
@@ -557,7 +557,7 @@ function build_gdc_host {
 	# Should use git am
 	for patch in $(find $root/patches/gcc -type f ); do
 		printMsg "Patching $patch"
-		git am $patch || exit
+		patch -p1 -i $patch
 	done
 
 	# Build GCC
