@@ -4,30 +4,35 @@ MinGW-GDC
  * Lastest working:
    * D2.062 GCC 4.8.0
 
-The procedures in this document are for building using MinGW's msys environment.
+This is a script for building a GCC+GDC compiler targetting MS Windows.
+The script can be run:
+- from Windows, using MinGW's MSYS2 environment.
+- from GNU/Linux (Tested under Debian).
 
-The script used to build GDC handles all dependencies and runs the DMD testsuite.
+The built compiler runs under the system it was built from.
+The script handles all dependencies (automatic download).
 
 Building
 --------
 
-* Install latest version of MinGW, MSYS [[http://mingw.org]]
+* If building for MS Windows, install MSYS2 [[http://mingw.org]]
 
 * Download the latest MinGW-GDC head
 
-	    git clone https://github.com/venix1/MinGW-GDC.git
-
-  * For the 4.8 branch append **-b GDC-4.8**
+  $ git clone https://github.com/Ace17/MinGW-GDC.git
 
 * Enter directory and run
 
-	    ./build.sh 
+  $ ./build.sh /path/to/output/directory
 
+  To enable parallel builds, type instead:
+  $ MAKE='make -j8' ./build.sh /path/to/output/directory
 
-For details about how to compile manually, review the [build.sh](https://github.com/venix1/MinGW-GDC/blob/master/build.sh) script 
 
 Common Issues
 -------------
 
-checking compiler gcc -O2 ... rm: cannot lstat `a.exe': Permission denied
-rm: cannot lstat `a.exe': Permission denied
+- I found that from MS Windows, parallel builds may sometimes fail. Under Debian
+I have had no issues building with 8 cores. Please note that some parts of the 
+build are designed to be sequential.
+
