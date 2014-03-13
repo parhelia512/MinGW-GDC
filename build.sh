@@ -319,20 +319,19 @@ function build_runtime
 }
 
 # Compile GMP
-if [ ! -e gmp-4.3.2/build/.built ]; then
+if [ ! -e gmp-5.1.3/build/.built ]; then
 
-  lazy_download "$CACHE/gmp-4.3.2.tar.bz2" "http://ftp.gnu.org/gnu/gmp/gmp-4.3.2.tar.bz2"
-  lazy_extract "gmp-4.3.2.tar.bz2"
-  mkgit "gmp-4.3.2"
+  lazy_download "$CACHE/gmp-5.1.3.tar.bz2" "http://ftp.gnu.org/gnu/gmp/gmp-5.1.3.tar.bz2"
+  lazy_extract "gmp-5.1.3.tar.bz2"
+  mkgit "gmp-5.1.3"
 
-  pushd gmp-4.3.2
-  patch -p1 < $root/patches/gmp-4.3.2-w64.patch
+  pushd gmp-5.1.3
 
   # Make 64
   mkdir -p build/64
   cd build/64
   ../../configure \
-    --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+    --prefix=$CROSSDEV/gdc-4.8/gmp-5.1.3/64 \
     --build=$BUILD \
     --host=$HOST \
     --enable-cxx \
@@ -362,7 +361,7 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
     --build=$BUILD \
     --host=$HOST \
     --disable-static \
-    --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+    --with-gmp=$CROSSDEV/gdc-4.8/gmp-5.1.3/64 \
     --enable-static \
     --disable-shared
   $MAKE
@@ -408,7 +407,7 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
     --host=$HOST \
     --enable-static \
     --disable-shared \
-    --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+    --with-gmp=$CROSSDEV/gdc-4.8/gmp-5.1.3/64 \
     --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64
   $MAKE
   $MAKE install
@@ -454,7 +453,7 @@ if [ ! -e isl-0.11.1/build/.built ]; then
     --host=$HOST \
     --enable-static \
     --disable-shared \
-    --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64
+    --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-5.1.3/64
     $MAKE
     $MAKE install
   cd ..
@@ -481,7 +480,7 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
     --host=$HOST \
     --enable-static \
     --disable-shared \
-    --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+    --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-5.1.3/64 \
     --with-isl-prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64
   $MAKE
   $MAKE install
@@ -495,7 +494,7 @@ mkdir -p $GCC_PREFIX/x86_64-$vendor-mingw32
 mkdir -p $GCC_PREFIX/x86_64-$vendor-mingw32/bin32
 mkdir -p $GCC_PREFIX/x86_64-$vendor-mingw32/lib32
 
-GMP_STAGE=$CROSSDEV/gdc-4.8/gmp-4.3.2/
+GMP_STAGE=$CROSSDEV/gdc-4.8/gmp-5.1.3/
 MPFR_STAGE=$CROSSDEV/gdc-4.8/mpfr-3.1.1/
 MPC_STAGE=$CROSSDEV/gdc-4.8/mpc-1.0.1/
 ISL_STAGE=$CROSSDEV/gdc-4.8/isl-0.11.1/
@@ -584,7 +583,7 @@ function build_gdc_host {
     --with-local-prefix=$GCC_PREFIX \
     --target=x86_64-$vendor-mingw32 \
     --enable-languages=c,c++,d,lto \
-    --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
+    --with-gmp=$CROSSDEV/gdc-4.8/gmp-5.1.3/64 \
     --with-mpfr=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
     --with-mpc=$CROSSDEV/gdc-4.8/mpc-1.0.1/64 \
     --enable-sjlj-exceptions \
