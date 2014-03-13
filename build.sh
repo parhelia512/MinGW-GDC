@@ -34,6 +34,7 @@ export LDFLAGS="-s"
 
 CROSSDEV=$1
 vendor="ace"
+HOST=$BUILD
 
 if [ -z "$CROSSDEV" ] ; then
   CROSSDEV=/crossdev
@@ -245,6 +246,7 @@ if [ ! -e binutils-2.24/build/.built ]; then
   ../configure \
     --prefix=$CROSSDEV/gdc-4.8/release \
     --build=$BUILD \
+    --host=$HOST \
     --target=x86_64-$vendor-mingw32 \
     --disable-nls \
     --disable-multilib \
@@ -332,6 +334,7 @@ if [ ! -e gmp-4.3.2/build/.built ]; then
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
     --build=$BUILD \
+    --host=$HOST \
     --enable-cxx \
     --enable-static \
     --disable-shared \
@@ -357,6 +360,7 @@ if [ ! -e mpfr-3.1.1/build/.built ]; then
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/mpfr-3.1.1/64 \
     --build=$BUILD \
+    --host=$HOST \
     --disable-static \
     --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
     --enable-static \
@@ -401,6 +405,7 @@ if [ ! -e mpc-1.0.1/build/.built ]; then
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/mpc-1.0.1/64 \
     --build=$BUILD \
+    --host=$HOST \
     --enable-static \
     --disable-shared \
     --with-gmp=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
@@ -446,6 +451,7 @@ if [ ! -e isl-0.11.1/build/.built ]; then
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
     --build=$BUILD \
+    --host=$HOST \
     --enable-static \
     --disable-shared \
     --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64
@@ -472,6 +478,7 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/64 \
     --build=$BUILD \
+    --host=$HOST \
     --enable-static \
     --disable-shared \
     --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-4.3.2/64 \
@@ -573,6 +580,7 @@ function build_gdc_host {
   ../configure \
     --prefix=$GCC_PREFIX \
     --build=$BUILD \
+    --host=$HOST \
     --with-local-prefix=$GCC_PREFIX \
     --target=x86_64-$vendor-mingw32 \
     --enable-languages=c,c++,d,lto \
