@@ -231,14 +231,13 @@ function mkgit {
 
 # Compile binutils
 
-lazy_download "$CACHE/binutils-2.23.2.tar.gz" "http://ftp.gnu.org/gnu/binutils/binutils-2.23.2.tar.gz"
-lazy_extract "binutils-2.23.2.tar.gz"
-mkgit "binutils-2.23.2"
+lazy_download "$CACHE/binutils-2.24.tar.bz2" "http://ftp.gnu.org/gnu/binutils/binutils-2.24.tar.bz2"
+lazy_extract "binutils-2.24.tar.bz2"
+mkgit "binutils-2.24"
 
-if [ ! -e binutils-2.23.2/build/.built ]; then
+if [ ! -e binutils-2.24/build/.built ]; then
 
-  pushd binutils-2.23.2
-  patch -p1 < $root/patches/mingw-tls-binutils-2.23.1.patch
+  pushd binutils-2.24
   sed "s/^%.*//" -i bfd/doc/bfd.texinfo
   sed "s/^%.*//" -i ld/ld.texinfo
   mkdir -p build
