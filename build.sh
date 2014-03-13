@@ -546,7 +546,7 @@ function build_gdc_host {
   #patch -p1 < $root/patches/mingw-gdc.patch
   #patch -p1 < $root/patches/mingw-gdc-remove-main-from-dmain2.patch
   # Should use git am
-  for patch in $(find $root/patches/gdc -type f ); do
+  for patch in $(find $root/patches/gdc -type f | sort ); do
     printMsg "Patching $patch"
     patch -p1 -i $patch
   done
@@ -558,7 +558,7 @@ function build_gdc_host {
   patch -p1 < $root/patches/mingw-tls-gcc-4.8.patch
 
   # Should use git am
-  for patch in $(find $root/patches/gcc -type f ); do
+  for patch in $(find $root/patches/gcc -type f | sort ); do
     printMsg "Patching $patch"
     patch -p1 -i $patch
   done
