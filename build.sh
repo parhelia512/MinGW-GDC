@@ -198,8 +198,8 @@ function install_build_tools
   lazy_download "$CACHE/gettext-0.18.3.1-1-mingw32-dll.tar.lzma" "http://sourceforge.net/projects/mingw/files/MinGW/Base/gettext/gettext-0.18.3.1-1/gettext-0.18.3.1-1-mingw32-dll.tar.lzma/download"
   # tar --lzma -xvf $CACHE/gettext-0.18.3.1-1-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release
 
-  lazy_download "$CACHE/gcc-core-4.8.1-3-mingw32-dll.tar.lzma" "http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.1-3/gcc-core-4.8.1-3-mingw32-dll.tar.lzma"
-  # tar --lzma -xvf $CACHE/gcc-core-4.8.1-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release bin/libgcc_s_dw2-1.dll
+  lazy_download "$CACHE/gcc-core-4.8.2-3-mingw32-dll.tar.lzma" "http://hivelocity.dl.sourceforge.net/project/mingw/MinGW/Base/gcc/Version4/gcc-4.8.2-3/gcc-core-4.8.2-3-mingw32-dll.tar.lzma"
+  # tar --lzma -xvf $CACHE/gcc-core-4.8.2-3-mingw32-dll.tar.lzma -C $CROSSDEV/gdc-4.8/release bin/libgcc_s_dw2-1.dll
 }
 
 #install_build_tools
@@ -527,15 +527,15 @@ function download_gdc {
 
 function download_gcc {
 
-  lazy_download "$CACHE/gcc-4.8.1.tar.bz2" "http://ftp.gnu.org/gnu/gcc/gcc-4.8.1/gcc-4.8.1.tar.bz2"
-  lazy_extract "gcc-4.8.1.tar.bz2"
-  mkgit "gcc-4.8.1"
+  lazy_download "$CACHE/gcc-4.8.2.tar.bz2" "http://ftp.gnu.org/gnu/gcc/gcc-4.8.2/gcc-4.8.2.tar.bz2"
+  lazy_extract "gcc-4.8.2.tar.bz2"
+  mkgit "gcc-4.8.2"
 }
 
 # Setup GDC and compile
 function build_gdc_host {
 
-  if [ -e gcc-4.8.1/build/.built ] ; then
+  if [ -e gcc-4.8.2/build/.built ] ; then
     return 0
   fi
 
@@ -551,10 +551,10 @@ function build_gdc_host {
     patch -p1 -i $patch
   done
 
-  ./setup-gcc.sh ../gcc-4.8.1
+  ./setup-gcc.sh ../gcc-4.8.2
   popd
 
-  pushd gcc-4.8.1
+  pushd gcc-4.8.2
   patch -p1 < $root/patches/mingw-tls-gcc-4.8.patch
 
   # Should use git am
@@ -594,7 +594,7 @@ function build_gdc_host {
 }
 
 function build_gdc_target {
-  pushd gcc-4.8.1/build
+  pushd gcc-4.8.2/build
   $MAKE all-target
   $MAKE install-target
   popd
