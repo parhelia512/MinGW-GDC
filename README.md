@@ -38,7 +38,9 @@ Building
 Common Issues
 -------------
 
-* Spaces in PATH. I have found 
+* Spaces in PATH. I have found that having spaces in your PATH variable may
+  cause the build of some packages to fail. The script detects this and will
+  fail in this case. Solution: clean your PATH variable for this shell.
 
 * I have found that from MS Windows, parallel builds may sometimes fail. Under
   Debian I have had no issues building with 8 cores. Please note that some parts
