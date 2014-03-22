@@ -375,26 +375,10 @@ fi
 # Compile MPC
 if [ ! -e mpc-1.0.1/build/.built ]; then
 
+
   lazy_download "$CACHE/mpc-1.0.1.tar.gz" http://ftp.gnu.org/gnu/mpc/mpc-1.0.1.tar.gz
-
-  if [ ! -d "mpc-1.0.1" ]; then
-    tar -xlf $CACHE/mpc-1.0.1.tar.gz
-    cd mpc-1.0.1
-    # prune unnecessary folders.
-    git init
-    git config user.email "nobody@localhost"
-    git config user.name "Nobody"
-    git config core.autocrlf false
-    git add *
-    git commit -am "MinGW/GDC restore point"
-    cd ..
-  else
-    cd mpc-1.0.1
-    git reset --hard
-    git clean -f
-    cd ..
-  fi
-
+  lazy_extract "mpc-1.0.1.tar.gz"
+  mkgit "mpc-1.0.1"
 
   pushd mpc-1.0.1
 
@@ -420,27 +404,10 @@ fi
 # Compile ISL
 if [ ! -e isl-0.11.1/build/.built ]; then
 
+
   lazy_download "$CACHE/isl-0.11.1.tar.bz2" "ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-0.11.1.tar.bz2"
-
-  #mkgit isl-0.11.1.tar.bz2 isl-0.11.1
-  if [ ! -d "isl-0.11.1" ]; then
-    tar -xlf $CACHE/isl-0.11.1.tar.bz2
-    cd isl-0.11.1
-
-    # prune unnecessary folders.
-    git init
-    git config user.email "nobody@localhost"
-    git config user.name "Nobody"
-    git config core.autocrlf false
-    git add *
-    git commit -am "MinGW/GDC restore point"
-    cd ..
-  else
-    cd isl-0.11.1
-    git reset --hard
-    git clean -f
-    cd ..
-  fi
+  lazy_extract "isl-0.11.1.tar.bz2"
+  mkgit "isl-0.11.1"
 
   pushd isl-0.11.1
 
