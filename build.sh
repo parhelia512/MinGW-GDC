@@ -381,6 +381,8 @@ fi
 # Compile MPC
 if [ ! -e mpc-1.0.1/build/.built ]; then
 
+  printMsg "********************************************************************************"
+  printMsg "Building MPC"
 
   lazy_download "$CACHE/mpc-1.0.1.tar.gz" http://ftp.gnu.org/gnu/mpc/mpc-1.0.1.tar.gz
   lazy_extract "mpc-1.0.1.tar.gz"
@@ -410,6 +412,8 @@ fi
 # Compile ISL
 if [ ! -e isl-0.11.1/build/.built ]; then
 
+  printMsg "********************************************************************************"
+  printMsg "Building ISL"
 
   lazy_download "$CACHE/isl-0.11.1.tar.bz2" "ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-0.11.1.tar.bz2"
   lazy_extract "isl-0.11.1.tar.bz2"
