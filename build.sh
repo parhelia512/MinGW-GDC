@@ -321,6 +321,9 @@ function build_runtime
 # Compile GMP
 if [ ! -e gmp-5.1.3/build/.built ]; then
 
+  printMsg "********************************************************************************"
+  printMsg "Building GMP"
+
   lazy_download "$CACHE/gmp-5.1.3.tar.bz2" "http://ftp.gnu.org/gnu/gmp/gmp-5.1.3.tar.bz2"
   lazy_extract "gmp-5.1.3.tar.bz2"
   mkgit "gmp-5.1.3"
@@ -346,6 +349,9 @@ fi
 
 # Compile MPFR
 if [ ! -e mpfr-3.1.1/build/.built ]; then
+
+  printMsg "********************************************************************************"
+  printMsg "Building MPFR"
 
   lazy_download "$CACHE/mpfr-3.1.1.tar.bz2" "http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.1.tar.bz2"
   lazy_extract "mpfr-3.1.1.tar.bz2"
@@ -423,9 +429,9 @@ if [ ! -e isl-0.11.1/build/.built ]; then
     --with-gmp-prefix=$CROSSDEV/gdc-4.8/gmp-5.1.3/64
     $MAKE
     $MAKE install
-  cd ..
+  popd
 
-  touch .built
+  touch build/.built
   popd
 fi
 
