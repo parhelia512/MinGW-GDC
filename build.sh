@@ -419,7 +419,7 @@ if [ ! -e isl-0.11.1/build/.built ]; then
 
   # Make 64
   mkdir -p build/64
-  cd build/64
+  pushd build/64
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
     --build=$BUILD \
@@ -444,9 +444,11 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
 
   pushd cloog-0.18.0
 
+  mkdir -p "$CROSSDEV/gdc-4.8/isl-0.11.1/64"
+
   # Build 64
   mkdir -p build/64
-  cd build/64
+  pushd build/64
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/cloog-0.18.0/64 \
     --build=$BUILD \
