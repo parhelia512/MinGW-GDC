@@ -491,9 +491,13 @@ cp -Rp $CLOOG_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
 
 function download_gdc {
 
+  if [ ! -d "$CACHE/GDC" ]; then
+    git clone https://github.com/D-Programming-GDC/GDC.git "$CACHE/GDC" -b $GDC_BRANCH
+  fi
+
   # Clone and configure GDC
   if [ ! -d "GDC" ]; then
-    git clone https://github.com/D-Programming-GDC/GDC.git -b $GDC_BRANCH
+    git clone "$CACHE/GDC" -b $GDC_BRANCH
   else
     cd GDC
     git fetch
@@ -531,8 +535,8 @@ function build_gdc_host {
     return 0
   fi
 
-  download_gcc
   download_gdc
+  download_gcc
 
   pushd GDC
   applyPatch "$root/patches/gdc/0001-This-needs-splitting.patch"
