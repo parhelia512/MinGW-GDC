@@ -13,7 +13,7 @@ function printMsg
 # Which branch to build against
 GDC_BRANCH="gdc-4.8"
 # Force a GDC Revision.  Empty uses head.
-GDC_VERSION="6296cfbe9756572e6d91e83e5d786ce5477fcb1b"
+GDC_VERSION="74eb776df00ec1b7b5b03c213814e84ef7cda5dd"
 
 set -e
 
