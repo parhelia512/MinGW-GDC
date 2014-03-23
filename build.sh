@@ -495,16 +495,8 @@ function download_gdc {
     git clone https://github.com/D-Programming-GDC/GDC.git "$CACHE/GDC" -b $GDC_BRANCH
   fi
 
-  # Clone and configure GDC
-  if [ ! -d "GDC" ]; then
-    git clone "$CACHE/GDC" -b $GDC_BRANCH
-  else
-    cd GDC
-    git fetch
-    git reset --hard origin/$GDC_BRANCH
-    git clean -f -d
-    cd ..
-  fi
+  rm -rf GDC
+  git clone "$CACHE/GDC" -b $GDC_BRANCH
 
   pushd GDC
 
