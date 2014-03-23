@@ -518,6 +518,12 @@ function download_gcc {
   mkgit "gcc-4.8.2"
 }
 
+function applyPatch {
+  patchFile=$1
+  printMsg "Patching $patch"
+  patch -p1 -i $patch
+}
+
 # Setup GDC and compile
 function build_gdc_host {
 
@@ -543,11 +549,28 @@ function build_gdc_host {
   pushd gcc-4.8.2
   patch -p1 < $root/patches/mingw-tls-gcc-4.8.patch
 
-  # Should use git am
-  for patch in $(find $root/patches/gcc -type f | sort ); do
-    printMsg "Patching $patch"
-    patch -p1 -i $patch
-  done
+  applyPatch "patches/gdc/0001-This-needs-splitting.patch"
+  applyPatch "patches/gdc/0002-Separate-main-from-libgphobos.-Required-for-WinMain-.patch"
+  applyPatch "patches/gdc/0003-MinGW-TLS-Support.patch"
+  applyPatch "patches/gdc/0004-Separate-dmain-from-libgphobos.patch"
+  applyPatch "patches/gdc/0005-Support-for-flockfile-funlockfile.patch"
+  applyPatch "patches/gdc/0006-C99-stdio-support-for-libgphobos.patch"
+  applyPatch "patches/gdc/0007-Add-static-assert-for-unsupported-platforms.patch"
+  applyPatch "patches/gdc/0008-Possible-64-bit-issue-detectoin.patch"
+  applyPatch "patches/gdc/0009-Add-WinSock2-dependency-to-phobos.patch"
+  applyPatch "patches/gdc/0010-Mark-ModuleInfoZ-as-DLL_EXPORT-and-DLL_IMPORT.patch"
+  applyPatch "patches/gdc/0011-DLLIMPORT-bugfix.-TLS-bugfix.patch"
+  applyPatch "patches/gdc/0012-Phobos-COM-requires-libuuid.patch"
+  applyPatch "patches/gdc/0013-Interlocked-cannot-be-export-in-64-bit-Windows.-They.patch"
+  applyPatch "patches/gdc/0014-Make-ClassInfo-DLL_IMPORT-DLL_EXPORT.patch"
+  applyPatch "patches/gdc/0015-Merge-with-other-TLS-commits.patch"
+  applyPatch "patches/gdc/0016-ClassDeclaration-DLLIMPORT-DLLEXPORT-attributes.patch"
+  applyPatch "patches/gdc/0017-alloca-is-declared-in-malloc.h.patch"
+  applyPatch "patches/gdc/0018-insert_decl_attributes-renamed-insert_decl_attribute.patch"
+  applyPatch "patches/gdc/0019-Mingw-doesn-t-prefix-strtold.patch"
+  applyPatch "patches/gdc/0020-MinGW64-corrections.patch"
+  applyPatch "patches/gdc/0021-Fixes-for-64-bit.patch"
+  applyPatch "patches/gdc/0022-cbrt-invalid-use-of-yl2x-for-Win64-MinGW.patch"
 
   # Build GCC
   mkdir -p build
