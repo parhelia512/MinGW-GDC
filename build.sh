@@ -30,7 +30,7 @@ export CFLAGS="-O2"
 export CXXFLAGS="-O2"
 export LDFLAGS="-s"
 
-#trap "printMsg 'Spawning a rescue shell in current build directory'; bash" EXIT
+trap "printMsg 'Spawning a rescue shell in current build directory'; bash" EXIT
 
 CROSSDEV=$1
 vendor="ace"
@@ -424,8 +424,10 @@ if [ ! -e isl-0.11.1/build/.built ]; then
   # Make 64
   mkdir -p build/64
   pushd build/64
+
+  mkdir -p "$CROSSDEV/gdc-4.8/isl-0.11.1/64"
   # '-D ffs=...' : fixes link error: "undefined symbol 'ffs'". Seems like ffs is only provided when optimizations are enabled.
-  CFLAGS+="-D ffs=__builtin_ffs" \
+  CFLAGS+=" -D ffs=__builtin_ffs " \
   ../../configure \
     --prefix=$CROSSDEV/gdc-4.8/isl-0.11.1/64 \
     --build=$BUILD \
