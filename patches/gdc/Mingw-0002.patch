@@ -1,0 +1,139 @@
+diff --git a/gcc/d/d-spec.c b/gcc/d/d-spec.c
+index 18f0d18..3478f7d 100644
+--- a/gcc/d/d-spec.c
++++ b/gcc/d/d-spec.c
+@@ -84,6 +108,10 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
+   /* Used by -debuglib */
+   int saw_debug_flag = 0;
+ 
++  /* Determines if 'dmain.o' should be linked.  This should be set to 0 if
++     an entrypoint other than 'main' is used. */
++  int include_dmain = 1;
++
+   /* What do with libgphobos:
+      -1 means we should not link in libgphobos
+      0  means we should link in libgphobos if it is needed
+@@ -347,6 +385,19 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
+ 
+ 	      break;
+ 	    }
++           
++	/* Options that signify a non main entry point. */
++        case OPT_fno_dmain:
++        case OPT_shared:
++#if TARGET_WINDOS
++        case OPT_mwindows:
++        case OPT_mdll:
++	
++#endif
++	    {
++              include_dmain = 0;
++              break;
++	    }
+ 	}
+     }
+ 
+@@ -467,6 +530,16 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
+   /* Add `-lgphobos' if we haven't already done so.  */
+   if (library > 0 && phobos)
+     {
++      /* Add dmain.o as well. Must be added before phobos to properly resolve
++         symbols. */
++      if (include_dmain)
++      {
++          generate_option (OPT_l, saw_profile_flag ? LIBPHOBOS_DMAIN_PROFILE : LIBPHOBOS_DMAIN, 1,
++                           CL_DRIVER, &new_decoded_options[j]);
++          added_libraries++;
++          j++;
++      }
++
+ #ifdef HAVE_LD_STATIC_DYNAMIC
+       if (library > 1 && !static_link)
+ 	{
+diff --git a/libphobos/libdruntime/Makefile.am b/libphobos/libdruntime/Makefile.am
+index 2f0c338..c8333a0 100644
+--- a/libphobos/libdruntime/Makefile.am
++++ b/libphobos/libdruntime/Makefile.am
+@@ -229,6 +233,8 @@ install-exec-local: libgdruntime.a
+ 	$(mkinstalldirs) $(DESTDIR)$(toolexeclibdir)
+ 	$(INSTALL) libgdruntime.a $(DESTDIR)$(toolexeclibdir)
+ 	$(RANLIB) $(DESTDIR)$(toolexeclibdir)/libgdruntime.a
++	$(INSTALL) $(CMAIN_OBJS) $(DESTDIR)$(toolexeclibdir)
++
+ 
+ install-data-local: libgdruntime.a
+ 	$(mkinstalldirs) $(DESTDIR)$(gdc_include_dir)
+diff --git a/libphobos/libdruntime/Makefile.in b/libphobos/libdruntime/Makefile.in
+index a74c7d2..c79e242 100644
+--- a/libphobos/libdruntime/Makefile.in
++++ b/libphobos/libdruntime/Makefile.in
+@@ -645,6 +650,8 @@ install-exec-local: libgdruntime.a
+ 	$(mkinstalldirs) $(DESTDIR)$(toolexeclibdir)
+ 	$(INSTALL) libgdruntime.a $(DESTDIR)$(toolexeclibdir)
+ 	$(RANLIB) $(DESTDIR)$(toolexeclibdir)/libgdruntime.a
++	$(INSTALL) $(CMAIN_OBJS) $(DESTDIR)$(toolexeclibdir)
++ 
+ 
+ install-data-local: libgdruntime.a
+ 	$(mkinstalldirs) $(DESTDIR)$(gdc_include_dir)
+diff --git a/libphobos/libdruntime/rt/dmain.d b/libphobos/libdruntime/rt/dmain.d
+new file mode 100644
+index 0000000..83439fa
+--- /dev/null
++++ b/libphobos/libdruntime/rt/dmain.d
+@@ -0,0 +1,11 @@
++private extern (C) int _d_run_main(int argc, char **argv, void* main);
++
++/***********************************
++ * The D main() function supplied by the user's program
++ */
++int main();
++
++extern (C) int main(int argc, char **argv)
++{
++    return _d_run_main(argc, argv, &main);
++}
+diff --git a/libphobos/libdruntime/rt/dmain2.d b/libphobos/libdruntime/rt/dmain2.d
+index 4236e8a..5802425 100644
+--- a/libphobos/libdruntime/rt/dmain2.d
++++ b/libphobos/libdruntime/rt/dmain2.d
+@@ -240,6 +240,39 @@ extern (C) CArgs rt_cArgs()
+ }
+ 
+ /***********************************
++ * The D main() function supplied by the user's program
++ *
++ * It always has `_Dmain` symbol name and uses C calling convention.
++ * But DMD frontend returns its type as `extern(D)` because of Issue @@@9028@@@.
++ * As we need to deal with actual calling convention we have to mark it
++ * as `extern(C)` and use its symbol name.
++ */
++extern(C) int _Dmain(char[][] args);
++//alias extern(C) int function(char[][] args) MainFunc;
++
++/***********************************
++ * Substitutes for the C main() function.
++ * Just calls into d_run_main with the default main function.
++ * Applications are free to implement their own
++ * main function and call the _d_run_main function
++ * themselves with any main function.
++ */
++/+ Handled by dmain.o
++extern (C) int main(int argc, char **argv)
++{
++    return _d_run_main(argc, argv, &_Dmain);
++}
+++/
++
++version (Solaris) extern (C) int _main(int argc, char** argv)
++{
++    // This is apparently needed on Solaris because the
++    // C tool chain seems to expect the main function
++    // to be called _main. It needs both not just one!
++    return main(argc, argv);
++}
++
++/***********************************
+  * Run the given main function.
+  * Its purpose is to wrap the D main()
+  * function and catch any unhandled exceptions.

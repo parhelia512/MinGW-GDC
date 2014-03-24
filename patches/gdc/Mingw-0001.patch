@@ -1,0 +1,1818 @@
+diff --git a/gcc/d/d-builtins.c b/gcc/d/d-builtins.c
+index 01377e6..7163ea9 100644
+--- a/gcc/d/d-builtins.c
++++ b/gcc/d/d-builtins.c
+@@ -764,10 +764,12 @@ eval_builtin (Loc loc, BUILTIN builtin, Expressions *arguments)
+ 
+     case BUILTINbsf:
+       callee = builtin_decl_explicit (BUILT_IN_CTZL);
++      gcc_assert (callee);
+       break;
+ 
+     case BUILTINbsr:
+       callee = builtin_decl_explicit (BUILT_IN_CLZL);
++      gcc_assert (callee);
+       break;
+ 
+     case BUILTINbswap:
+diff --git a/gcc/d/d-codegen.cc b/gcc/d/d-codegen.cc
+index 9d31e3d..d949346 100644
+--- a/gcc/d/d-codegen.cc
++++ b/gcc/d/d-codegen.cc
+@@ -80,17 +80,17 @@ d_decl_context (Dsymbol *dsym)
+ // have their DECL_CONTEXT set as the symbol of the parent.
+ 
+ tree
+-d_build_module (Dsymbol *dsym)
++d_build_module (Loc loc, Dsymbol *dsym)
+ {
+   if (dsym->isModule() || dsym->isPackage())
+     {
+       tree decl = build_decl (UNKNOWN_LOCATION, NAMESPACE_DECL,
+ 			      get_identifier (dsym->ident->string),
+ 			      void_type_node);
+-      set_decl_location (decl, dsym);
++      set_decl_location (decl, loc);
+ 
+       if (dsym->parent)
+-	DECL_CONTEXT (decl) = d_build_module (dsym->parent);
++	DECL_CONTEXT (decl) = d_build_module (loc, dsym->parent);
+ 
+       return decl;
+     }
+diff --git a/gcc/d/d-codegen.h b/gcc/d/d-codegen.h
+index f54d623..8a8b516 100644
+--- a/gcc/d/d-codegen.h
++++ b/gcc/d/d-codegen.h
+@@ -113,7 +113,7 @@ class ArrayScope;
+ 
+ // Code generation routines.
+ extern tree d_decl_context (Dsymbol *dsym);
+-extern tree d_build_module (Dsymbol *dsym);
++extern tree d_build_module (Loc loc, Dsymbol *dsym);
+ 
+ extern tree d_mark_addressable (tree exp);
+ extern tree d_mark_used (tree exp);
+diff --git a/gcc/d/d-ctype.cc b/gcc/d/d-ctype.cc
+index 16258db..416f133 100644
+--- a/gcc/d/d-ctype.cc
++++ b/gcc/d/d-ctype.cc
+@@ -391,6 +391,11 @@ TypeFunction::toCtype (void)
+ 	    case LINKc:
+ 	    case LINKcpp:
+ 	    case LINKd:
++	    #if TARGET_WINDOS
++            /* GCC switched MinGW's Default ABI to THISCALL/CDECL.  GDC 
++               currently has issues with this so force CDECL fow now. */
++            ctype = insert_type_attribute (ctype, "cdecl");
++	    #endif
+ 	      break;
+ 
+ 	    default:
+diff --git a/gcc/d/d-decls.cc b/gcc/d/d-decls.cc
+index 0295e72..0852145 100644
+--- a/gcc/d/d-decls.cc
++++ b/gcc/d/d-decls.cc
+@@ -181,11 +181,11 @@ VarDeclaration::toSymbol (void)
+       // Have to test for import first
+       if (isImportedSymbol())
+ 	{
+-	  insert_decl_attributes (decl, "dllimport");
++	  insert_decl_attribute (decl, "dllimport");
+ 	  DECL_DLLIMPORT_P (decl) = 1;
+ 	}
+       else if (isExport())
+-	insert_decl_attributes (decl, "dllexport");
++	insert_decl_attribute (decl, "dllexport");
+ #endif
+ 
+       if (global.params.vtls && isDataseg() && isThreadlocal())
+@@ -392,11 +392,11 @@ FuncDeclaration::toSymbol (void)
+ 	  // Have to test for import first
+ 	  if (isImportedSymbol())
+ 	    {
+-	      insert_decl_attributes (fndecl, "dllimport");
++	      insert_decl_attribute (fndecl, "dllimport");
+ 	      DECL_DLLIMPORT_P (fndecl) = 1;
+ 	    }
+ 	  else if (isExport())
+-	    insert_decl_attributes (fndecl, "dllexport");
++	    insert_decl_attribute (fndecl, "dllexport");
+ #endif
+ 	  set_decl_location (fndecl, this);
+ 	  setup_symbol_storage (this, fndecl, false);
+@@ -569,9 +569,34 @@ Module::toSymbol (void)
+       TREE_CONSTANT (decl) = 0;
+       TREE_READONLY (decl) = 0;
+ 
+-      tree module = d_build_module (this);
+-      csym->ScontextDecl = module;
++#if TARGET_WINDOS && TARGET_DLLIMPORT_DECL_ATTRIBUTES
++      // Have to test for import first
++      if (isImportedSymbol())
++        {
++          insert_decl_attribute (decl, "dllimport");
++          DECL_DLLIMPORT_P(decl) = 1;
++        }
++      else if (isExport())
++        insert_decl_attribute (decl, "dllexport");
++#endif  	  
++
++      // Store the NAMESPACE_DECL in ScontextDecl.
++      Loc loc = (this->md != NULL) ? this->md->loc : Loc(this, 1);
++      tree module = d_build_module (loc, this);
+       d_keep (module);
++
++      if (output_module_p (this))
++	{
++	  DECL_EXTERNAL (module) = 0;
++	  TREE_PUBLIC (module) = 1;
++	}
++      else
++	{
++	  DECL_EXTERNAL (module) = 1;
++	  TREE_PUBLIC (module) = 0;
++	}
++
++      csym->ScontextDecl = module;
+     }
+ 
+   return csym;
+diff --git a/gcc/d/d-objfile.cc b/gcc/d/d-objfile.cc
+index ae022ec..b92986e 100644
+--- a/gcc/d/d-objfile.cc
++++ b/gcc/d/d-objfile.cc
+@@ -16,12 +16,15 @@
+ // <http://www.gnu.org/licenses/>.
+ 
+ #include "d-system.h"
++#include "debug.h"
++
+ #include "d-lang.h"
+ #include "d-codegen.h"
+ 
+ #include "attrib.h"
+ #include "enum.h"
+ #include "id.h"
++#include "import.h"
+ #include "init.h"
+ #include "module.h"
+ #include "template.h"
+@@ -92,12 +95,43 @@ Symbol::~Symbol (void)
+ void
+ Dsymbol::toObjFile (int)
+ {
+-  TupleDeclaration *td = this->isTupleDeclaration();
++  // Emit the imported symbol to debug.
++  Import *imp = this->isImport();
+ 
+-  if (!td)
+-    return;
++  if (imp != NULL)
++    {
++      tree decl, context;
++      tree name = NULL_TREE;
++
++      if (imp->ident == NULL)
++	{
++	  // Implements selective imported as IMPORTED_DECL.
++	  // TODO: use Dsymbol->toImport?
++	  return;
++	}
++      else
++	{
++	  // Implements import declarations.
++	  // %% Do we need special treatment for static imports?
++    	  decl = imp->mod->toSymbol()->ScontextDecl;
++    	  context = d_decl_context (imp);
++	  
++	  // It's a renamed import, set name as the alias.
++	  if (imp->aliasId != NULL)
++	    name = get_identifier (imp->aliasId->string);
++
++	  set_input_location (imp);
++	}
++
++      (*debug_hooks->imported_module_or_decl) (decl, name, context, false);
++      return;
++    }
+ 
+   // Emit local variables for tuples.
++  TupleDeclaration *td = this->isTupleDeclaration();
++  if (td == NULL)
++    return;
++
+   for (size_t i = 0; i < td->objects->dim; i++)
+     {
+       RootObject *o = (*td->objects)[i];
+@@ -1499,6 +1533,23 @@ Module::genobjfile (int)
+ 	stest = build_unittest_function ("*__modtest", mi->unitTests);
+ 
+       genmoduleinfo();
++
++#ifdef TARGET_DLLIMPORT_DECL_ATTRIBUTES
++    // Apply dllexport for ModuleInfo and dllimport for imports.
++    insert_decl_attribute (toSymbol()->Stree, "dllexport");
++
++      for (size_t i = 0; i < aimports.dim; i++)
++    {   
++      Module *m = aimports.tdata()[i];
++            
++        if (m->needmoduleinfo)
++      {   
++        Symbol *s = m->toSymbol();                
++        insert_decl_attribute (s->Stree, "dllimport");
++        DECL_DLLIMPORT_P(s->Stree) = 1;
++      }
++    }
++#endif 	  
+     }
+ 
+   // Finish off any thunks deferred during compilation.
+@@ -1578,20 +1629,48 @@ set_input_location (const Loc& loc)
+     input_location = get_linemap (loc);
+ }
+ 
+-// Set the decl T source location to LOC.
++// Some D Declarations don't have the loc set, this searches DECL's parents
++// until a valid loc is found.
++
++void
++set_input_location (Dsymbol *decl)
++{
++  Dsymbol *dsym = decl;
++  while (dsym)
++    {
++      if (dsym->loc.filename)
++	{
++	  set_input_location (dsym->loc);
++	  return;
++	}
++      dsym = dsym->toParent();
++    }
++
++  // Fallback; backend sometimes crashes if not set
++  Module *mod = decl->getModule();
++  Loc loc;
++
++  if (mod && mod->srcfile && mod->srcfile->name)
++    loc.filename = mod->srcfile->name->str;
++  else
++    // Empty string can mess up debug info
++    loc.filename = "<no_file>";
++
++  loc.linnum = 1;
++  set_input_location (loc);
++}
++
++// Like set_input_location, but sets the location on decl T.
+ 
+ void
+ set_decl_location (tree t, const Loc& loc)
+ {
+-  // DWARF2 will often crash if the DECL_SOURCE_FILE is not set.  It's
+-  // easier the error here.
++  // DWARF2 will often crash if the DECL_SOURCE_FILE is not set.
++  // It's easier the error here.
+   gcc_assert (loc.filename);
+   DECL_SOURCE_LOCATION (t) = get_linemap (loc);
+ }
+ 
+-// Some D Declarations don't have the loc set, this searches DECL's parents
+-// until a valid loc is found.
+-
+ void
+ set_decl_location (tree t, Dsymbol *decl)
+ {
+@@ -1607,17 +1686,17 @@ set_decl_location (tree t, Dsymbol *decl)
+     }
+ 
+   // Fallback; backend sometimes crashes if not set
+-  Module *m = decl->getModule();
+-  Loc l;
++  Module *mod = decl->getModule();
++  Loc loc;
+ 
+-  if (m && m->srcfile && m->srcfile->name)
+-    l.filename = m->srcfile->name->str;
++  if (mod && mod->srcfile && mod->srcfile->name)
++    loc.filename = mod->srcfile->name->str;
+   else
+-    // Emptry string can mess up debug info
+-    l.filename = "<no_file>";
++    // Empty string can mess up debug info
++    loc.filename = "<no_file>";
+ 
+-  l.linnum = 1;
+-  set_decl_location (t, l);
++  loc.linnum = 1;
++  set_decl_location (t, loc);
+ }
+ 
+ void
+@@ -1892,6 +1971,15 @@ d_finish_function (FuncDeclaration *fd)
+   Symbol *s = fd->toSymbol();
+   tree decl = s->Stree;
+ 
++  // For MinGW we alias _tls_start and _tls_end.  Otherwise we have an offset
++  // that could result in memory corruption.  As well as alignment issues for
++  // the GC.
++#ifndef TARGET_WINDOS  
++  // Write out _tlsstart/_tlsend.
++  // if (fd->isMain() || fd->isWinMain() || fd->isDllMain())
++  //  build_tlssections();
++#endif
++
+   gcc_assert (TREE_CODE (decl) == FUNCTION_DECL);
+ 
+   if (DECL_SAVED_TREE (decl) != NULL_TREE)
+diff --git a/gcc/d/d-objfile.h b/gcc/d/d-objfile.h
+index 604a244..b9baf86 100644
+--- a/gcc/d/d-objfile.h
++++ b/gcc/d/d-objfile.h
+@@ -120,6 +120,7 @@ enum TemplateEmission
+ 
+ extern location_t get_linemap (const Loc loc);
+ extern void set_input_location (const Loc& loc);
++extern void set_input_location (Dsymbol *decl);
+ 
+ extern void set_decl_location (tree t, const Loc& loc);
+ extern void set_decl_location (tree t, Dsymbol *decl);
+diff --git a/gcc/d/d-spec.c b/gcc/d/d-spec.c
+index 18f0d18..3478f7d 100644
+--- a/gcc/d/d-spec.c
++++ b/gcc/d/d-spec.c
+@@ -40,6 +40,10 @@
+ #define WITHLIBC	(1<<6)
+ /* This bit is set when the argument should not be passed to gcc or the backend */
+ #define SKIPOPT		(1<<8)
++/* This bit is set if they did `-lws2_32'.  */
++#define WITHLIBWS2_32      (1<<9)
++/* This bit is set if they did `-luuid'.  */
++#define WITHLIBUUID     (1<<10)
+ 
+ #ifndef MATH_LIBRARY
+ #define MATH_LIBRARY "m"
+@@ -70,6 +74,26 @@
+ #define LIBPHOBOS_PROFILE LIBPHOBOS
+ #endif
+ 
++#ifndef LIBPHOBOS_DMAIN
++#define LIBPHOBOS_DMAIN ":dmain.o"
++#endif
++#ifndef LIBPHOBOS_DMAIN_PROFILE
++#define LIBPHOBOS_DMAIN_PROFILE LIBPHOBOS_DMAIN
++#endif
++
++/* mingw and cygwin don't have pthread. %% TODO: check darwin.  */
++#if TARGET_WINDOS || TARGET_OSX || TARGET_ANDROID_D
++#define USE_PTHREADS	0
++#else
++#define USE_PTHREADS	1
++#endif
++
++/* mingw phobos has a dependency on -lws2_32 */
++#if TARGET_WINDOS
++#define NEED_WINSOCK2 1
++#else
++#define NEED_WINSOCK2 0
++#endif
+ 
+ void
+ lang_specific_driver (cl_decoded_option **in_decoded_options,
+@@ -112,6 +140,12 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
+   /* "-lrt" if it appears on the command line.  */
+   const cl_decoded_option *saw_time = 0;
+ 
++  /* "-lws2_32" if it appears on the command line.  */
++  const cl_decoded_option *saw_libws2_32 = 0;
++
++  /* "-luuid" if it appears on the command line.  */
++  const cl_decoded_option *saw_libuuid = 0;
++
+   /* "-lc" if it appears on the command line.  */
+   const cl_decoded_option *saw_libc = 0;
+ 
+@@ -245,6 +279,10 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
+ 	    }
+ 	  else if (strcmp (arg, "c") == 0)
+ 	    args[i] |= WITHLIBC;
++      else if (strcmp (arg, "ws2_32") == 0)
++        args[i] |= WITHLIBWS2_32;
++      else if (strcmp (arg, "uuid") == 0)
++        args[i] |= WITHLIBUUID;
+ 	  else
+ 	    /* Unrecognized libraries (e.g. -ltango) may require libphobos.  */
+ 	    library = (library == 0) ? 1 : library;
+@@ -413,6 +464,18 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
+ 	  saw_libc = &decoded_options[i];
+ 	}
+ 
++      if (!saw_libws2_32 && (args[i] & WITHLIBWS2_32) && library > 0)
++    {
++      --j;
++      saw_libws2_32 = &decoded_options[i];
++    }
++
++      if (!saw_libuuid && (args[i] & WITHLIBUUID) && library > 0)
++    {
++      --j;
++      saw_libuuid = &decoded_options[i];
++    }
++
+       if (!saw_libcxx && (args[i] & WITHLIBCXX) && library > 0)
+ 	{
+ 	  --j;
+@@ -489,6 +563,39 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
+ 	  j++;
+ 	}
+ #endif
++
++      if (saw_libws2_32)
++    new_decoded_options[j++] = *saw_libws2_32;
++#if NEED_WINSOCK2
++    /* Phobos has a dependency on -lws2_32 */
++      else
++    {
++      generate_option (OPT_l, "ws2_32", 1, CL_DRIVER,
++	                   &new_decoded_options[j]);
++      added_libraries++;
++      j++;
++    }
++#endif
++
++      if (saw_libuuid)
++    new_decoded_options[j++] = *saw_libuuid;
++#if TARGET_WINDOWS
++    /* Phobos COM depend on libuuid.a */
++      else if (saw_libuuid && library > 0)
++    {
++      generate_option (OPT_l, "uuid", 1, CL_DRIVER,
++                       &new_decoded_options[j]);
++      added_libraries++;
++      j++;
++    }
++#endif
++
++#if USE_PTHREADS
++      /* When linking libphobos statically we also need to link with the
++	 pthread library.  */
++      if (library > 1 || static_link)
++	need_thread = 1;
++#endif
+     }
+   else if (saw_debug_flag && debuglib)
+     {
+@@ -548,6 +655,9 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
+   if (saw_libc)
+     new_decoded_options[j++] = *saw_libc;
+ 
++  if (saw_libws2_32)
++    new_decoded_options[j++] = *saw_libws2_32;
++
+   if (shared_libgcc && !static_link)
+     {
+       generate_option (OPT_shared_libgcc, NULL, 1, CL_DRIVER,
+diff --git a/gcc/d/d-toir.cc b/gcc/d/d-toir.cc
+index 9b9c064..57ccf26 100644
+--- a/gcc/d/d-toir.cc
++++ b/gcc/d/d-toir.cc
+@@ -556,5 +556,14 @@ PragmaStatement::toIR (IRState *)
+ void
+ ImportStatement::toIR (IRState *)
+ {
++    if (!imports)
++        return;
++
++    for (size_t i = 0; i < imports->dim; i++)
++    {
++        Dsymbol *dsym = (*imports)[i];
++        if (dsym)
++            dsym->toObjFile (0);
++    }
+ }
+ 
+diff --git a/gcc/d/dfrontend/mtype.c b/gcc/d/dfrontend/mtype.c
+index 2484d64..2aed4fd 100644
+--- a/gcc/d/dfrontend/mtype.c
++++ b/gcc/d/dfrontend/mtype.c
+@@ -2305,8 +2305,11 @@ Identifier *Type::getTypeInfoIdent(int internal)
+     assert(strlen(name) < namelen);     // don't overflow the buffer
+ 
+     size_t off = 0;
++// MinGW needs the '_'
++#if !defined(__MINGW32__)
+     if (global.params.isOSX || global.params.isWindows && !global.params.is64bit)
+         ++off;                 // C mangling will add '_' back in
++#endif
+     Identifier *id = Lexer::idPool(name + off);
+ 
+     if (name != namebuf)
+diff --git a/gcc/d/dfrontend/speller.c b/gcc/d/dfrontend/speller.c
+index 7f7a0a7..4888351 100644
+--- a/gcc/d/dfrontend/speller.c
++++ b/gcc/d/dfrontend/speller.c
+@@ -15,6 +15,8 @@
+ #if __sun || _MSC_VER
+ #include <alloca.h>
+ #endif
++//#elif __MINGW__
++#include <malloc.h>
+ 
+ #include "speller.h"
+ 
+diff --git a/gcc/d/lang.opt b/gcc/d/lang.opt
+index 5df6e80..601d4d3 100644
+--- a/gcc/d/lang.opt
++++ b/gcc/d/lang.opt
+@@ -196,6 +196,10 @@ static-libphobos
+ Driver
+ Link the standard D library statically in the compilation
+ 
++fno-dmain
++Driver
++Do not link phobos dmain.o.
++
+ Wall
+ D
+ ; Documented in c.opt
+diff --git a/libphobos/libdruntime/Makefile.am b/libphobos/libdruntime/Makefile.am
+index 2f0c338..c8333a0 100644
+--- a/libphobos/libdruntime/Makefile.am
++++ b/libphobos/libdruntime/Makefile.am
+@@ -129,8 +129,12 @@ RT_POSIX_OBJS=core/sys/posix/dirent.o core/sys/posix/netdb.o \
+ 
+ RT_WINDOWS_OBJS=core/sys/windows/dbghelp.o core/sys/windows/dll.o \
+ 		core/sys/windows/stacktrace.o core/sys/windows/threadaux.o \
++	core/sys/windows/mingwex.o \
++	core/sys/windows/mingwasm.o \
+ 		core/sys/windows/windows.o
+ 
++CMAIN_OBJS= rt/dmain.o
++
+ D_GC_MODULES=@D_GC_MODULES@
+ 
+ # Regardless of OS, all import headers are generated.
+diff --git a/libphobos/libdruntime/Makefile.in b/libphobos/libdruntime/Makefile.in
+index a74c7d2..c79e242 100644
+--- a/libphobos/libdruntime/Makefile.in
++++ b/libphobos/libdruntime/Makefile.in
+@@ -276,9 +276,14 @@ RT_POSIX_OBJS = core/sys/posix/dirent.o core/sys/posix/netdb.o \
+ 
+ RT_WINDOWS_OBJS = core/sys/windows/dbghelp.o core/sys/windows/dll.o \
+ 		core/sys/windows/stacktrace.o core/sys/windows/threadaux.o \
++	core/sys/windows/mingwex.o \
++	core/sys/windows/mingwasm.o \
+ 		core/sys/windows/windows.o
+ 
+ 
++# This should not be linked into a shared library.
++CMAIN_OBJS = rt/dmain.o
++
+ # Regardless of OS, all import headers are generated.
+ CORE_IMPORTS = core/atomic.di core/bitop.di core/cpuid.di core/demangle.di \
+ 	     core/exception.di core/math.di core/memory.di core/runtime.di \
+diff --git a/libphobos/libdruntime/core/stdc/stdlib.d b/libphobos/libdruntime/core/stdc/stdlib.d
+index a88c0b4..bac1f08 100644
+--- a/libphobos/libdruntime/core/stdc/stdlib.d
++++ b/libphobos/libdruntime/core/stdc/stdlib.d
+@@ -67,11 +67,6 @@ version (Win64)
+         return strtod(nptr, endptr);
+     }
+ }
+-else version (MinGW)
+-{
+-    real __mingw_strtold(in char* nptr, char** endptr);
+-    alias __mingw_strtold strtold;
+-}
+ else
+ {
+     real strtold(in char* nptr, char** endptr);
+diff --git a/libphobos/libdruntime/core/sys/windows/dll.d b/libphobos/libdruntime/core/sys/windows/dll.d
+index 271091b..88353d8 100644
+--- a/libphobos/libdruntime/core/sys/windows/dll.d
++++ b/libphobos/libdruntime/core/sys/windows/dll.d
+@@ -24,7 +24,17 @@ version( Windows )
+ 
+     extern (C)
+     {
+-        version (Win32)
++        version (MinGW)
++        {
++            extern __gshared void* _tls_start;
++            extern __gshared void* _tls_end;
++            extern __gshared void* __xl_a;
++
++            alias _tls_start _tlsstart;
++            alias _tls_end   _tlsend;
++            alias __xl_a     _tls_callbacks_a;		
++        }
++        else version (Win32)
+         {
+             extern __gshared void* _tlsstart;
+             extern __gshared void* _tlsend;
+@@ -297,7 +307,7 @@ public:
+      *
+      * _tls_index is initialized by the compiler to 0, so we can use this as a test.
+      */
+-    bool dll_fixTLS( HINSTANCE hInstance, void* tlsstart, void* tlsend, void* tls_callbacks_a, int* tlsindex ) nothrow
++    bool dll_fixTLS( HINSTANCE hInstance, void* tlsstart, void* tlsend, void* tls_callbacks_a, int* tlsindex )
+     {
+         version (Win64)
+             return true;                // fixed
+@@ -312,11 +322,15 @@ public:
+             return true;
+ 
+         void** peb;
+-        asm
+-        {
+-            mov EAX,FS:[0x30];
+-            mov peb, EAX;
+-        }
++        version( GNU_InlineAsm ) 
++            asm { "movl %%fs:0x30, %0;" : "=r" peb; }
++        else        
++            asm
++            {
++                mov EAX,FS:[0x30];
++                mov peb, EAX;
++            }
++        
+         dll_aux.LDR_MODULE *ldrMod = dll_aux.findLdrModule( hInstance, peb );
+         if( !ldrMod )
+             return false; // not in module list, bail out
+diff --git a/libphobos/libdruntime/core/sys/windows/mingwasm.S b/libphobos/libdruntime/core/sys/windows/mingwasm.S
+new file mode 100644
+index 0000000..730c03b
+--- /dev/null
++++ b/libphobos/libdruntime/core/sys/windows/mingwasm.S
+@@ -0,0 +1,73 @@
++/**
++ * Support code for MinGW fibers.
++ */
++#if defined(__x86_64__) 
++ 	.global	fiber_switchContext
++fiber_switchContext:
++	// save current stack state
++    pushq %RBP;
++    movq  %RSP, %RBP;
++    pushq %RBX;
++    pushq %R12;
++    pushq %R13;
++    pushq %R14;
++    pushq %R15;
++    pushq %GS:0;
++    pushq %GS:8;
++    pushq %GS:16;
++	
++	// store oldp
++    movq %RSP, (%RCX);
++    // load newp to begin context switch
++    movq %RDX, %RSP;
++
++    // load saved state from new stack
++    popq %GS:16;
++	popq %GS:8;
++    popq %GS:0;
++    popq %R15;
++    popq %R14;
++    popq %R13;
++    popq %R12;
++    popq %RBX;
++    popq %RBP;
++
++	// 'return' to complete switch
++    popq %RCX;
++    jmp *%RCX;
++#elif defined(_X86_)
++ 	.global	_fiber_switchContext
++_fiber_switchContext:
++	// Save current stack state.save current stack state
++	// Standard CDECL prologue.  
++	push %EBP;
++	mov  %ESP, %EBP;
++	push %EDI;
++    push %ESI;
++    push %EBX;
++    push %FS:0;
++    push %FS:4;
++    push %FS:8;
++    push %EAX;
++
++    // store oldp again with more accurate address
++    mov 8(%EBP), %EAX;
++    mov %ESP, (%EAX);
++    // load newp to begin context switch
++    mov 12(%EBP), %ESP;
++
++    // load saved state from new stack
++    pop %EAX;
++    pop %FS:8;
++    pop %FS:4;
++    pop %FS:0;
++    pop %EBX;
++    pop %ESI;
++    pop %EDI;
++    pop %EBP;
++
++    // 'return' to complete switch
++    ret;
++#else
++// assert?
++#endif
+diff --git a/libphobos/libdruntime/core/sys/windows/mingwex.d b/libphobos/libdruntime/core/sys/windows/mingwex.d
+new file mode 100644
+index 0000000..33bb441
+--- /dev/null
++++ b/libphobos/libdruntime/core/sys/windows/mingwex.d
+@@ -0,0 +1,272 @@
++/*
++ * MinGW uses MSVCRT stdio functions by default.  Support for C99 is done with 
++ * macros and inline functions.  This module generates replacement functions
++ * suitable for extern(C) usage.
++ *
++ * From mingw-w64 stdio.h
++ * This file has no copyright assigned and is placed in the Public Domain.
++ * This file is part of the w64 mingw-runtime package.
++ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
++ */
++module core.sys.windows.mingwex;
++  
++//version (MinGW):
++version (none):
++extern (C):
++
++private import gcc.builtins;
++private import core.vararg;
++private import core.stdc.stdio;
++private import core.stdc.stddef;
++
++
++extern {
++    int __mingw_sscanf(in char *  _Src,in char *  _Format,...);
++    int __mingw_vsscanf (in char *  _Str,in char *  Format,va_list argp);
++    int __mingw_scanf(in char *  _Format,...);
++    int __mingw_vscanf(in char *  Format, va_list argp);
++    int __mingw_fscanf(FILE *  _File,in char *  _Format,...);
++    int __mingw_vfscanf (FILE *  fp, in char *  Format,va_list argp);
++    int __mingw_vsnprintf(char *  _DstBuf,size_t _MaxCount,in char *  _Format, va_list _ArgList);
++    int __mingw_snprintf(char *  s, size_t n, in char *   format, ...);
++    
++    int __mingw_swscanf(in wchar_t *  _Src,in wchar_t *  _Format,...);
++    int __mingw_vswscanf (in wchar_t *  _Str,in wchar_t *  Format,va_list argp);
++    int __mingw_wscanf(in wchar_t *  _Format,...);
++    int __mingw_vwscanf(in wchar_t *  Format, va_list argp);
++    int __mingw_fwscanf(FILE *  _File,in wchar_t *  _Format,...);
++    int __mingw_vfwscanf (FILE *  fp, in wchar_t *  Format,va_list argp);
++    
++    int __mingw_fwprintf(FILE *  _File,in wchar_t *  _Format,...);
++    int __mingw_wprintf(in wchar_t *  _Format,...);
++    int __mingw_vfwprintf(FILE *  _File,in wchar_t *  _Format,va_list    _ArgList);
++    int __mingw_vwprintf(in wchar_t *  _Format,va_list _ArgList);
++    deprecated int __mingw_swprintf(wchar_t *  , in wchar_t *  , ...);
++    deprecated int __mingw_vswprintf(wchar_t *  , in wchar_t *  ,va_list);
++    int __mingw_snwprintf (wchar_t *  s, size_t n, in wchar_t *  format, ...);
++    int __mingw_vsnwprintf (wchar_t *  , size_t, in wchar_t *  , va_list);
++
++
++    nothrow 
++    {
++        int __mingw_printf(in char *  , ... );
++        int __mingw_vprintf (in char *  , va_list);
++        int __mingw_fprintf (FILE *  , in char *  , ...);
++        int __mingw_vfprintf (FILE *  , in char *  , va_list);
++        int __mingw_sprintf (char *  , in char *  , ...);
++        int __mingw_vsprintf (char *  , in char *  , va_list);
++        int __mingw_asprintf(char **  , in char *  , ...);
++        int __mingw_vasprintf(char **  , in char *  , va_list);
++    }
++}
++
++int sscanf(in char *__source, in char *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vsscanf( __source, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int scanf(in char *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vscanf( __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int fscanf(FILE *__stream, in char *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vfscanf( __stream, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int vsscanf (in char *__source, in char *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vsscanf( __source, __format, __local_argv );
++}
++
++int vscanf(in char *__format,  __builtin_va_list __local_argv)
++{
++  return __mingw_vscanf( __format, __local_argv );
++}
++
++int vfscanf (FILE *__stream,  in char *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vfscanf( __stream, __format, __local_argv );
++}
++
++int fprintf (FILE *__stream, in char *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vfprintf( __stream, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int printf (in char *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vprintf( __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int sprintf (char *__stream, in char *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vsprintf( __stream, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int vfprintf (FILE *__stream, in char *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vfprintf( __stream, __format, __local_argv );
++}
++
++int vprintf (in char *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vprintf( __format, __local_argv );
++}
++
++int vsprintf (char *__stream, in char *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vsprintf( __stream, __format, __local_argv );
++}
++
++int asprintf(char **__ret, in char *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vasprintf( __ret, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++
++int vasprintf(char **__ret, in char *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vasprintf( __ret, __format, __local_argv );
++}
++
++int snprintf (char *__stream, size_t __n, in char *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vsnprintf( __stream, __n, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int vsnprintf (char *__stream, size_t __n, in char *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vsnprintf( __stream, __n, __format, __local_argv );
++}
++ 
++int swscanf(in wchar_t *__source, in wchar_t *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vswscanf( __source, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int wscanf(in wchar_t *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vwscanf( __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int fwscanf(FILE *__stream, in wchar_t *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vfwscanf( __stream, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int vswscanf (in wchar_t * __source, in wchar_t * __format, __builtin_va_list __local_argv)
++{
++  return __mingw_vswscanf( __source, __format, __local_argv );
++}
++
++int vwscanf(in wchar_t *__format,  __builtin_va_list __local_argv)
++{
++  return __mingw_vwscanf( __format, __local_argv );
++}
++
++int vfwscanf (FILE *__stream,  in wchar_t *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vfwscanf( __stream, __format, __local_argv );
++}
++
++int fwprintf (FILE *__stream, in wchar_t *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vfwprintf( __stream, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int wprintf (in wchar_t *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vwprintf( __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int swprintf (wchar_t *__stream, in wchar_t *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vswprintf( __stream, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int vfwprintf (FILE *__stream, in wchar_t *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vfwprintf( __stream, __format, __local_argv );
++}
++
++int vwprintf (in wchar_t *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vwprintf( __format, __local_argv );
++}
++
++int vswprintf (wchar_t *__stream, in wchar_t *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vswprintf( __stream, __format, __local_argv );
++}
++
++int snwprintf (wchar_t *__stream, size_t __n, in wchar_t *__format, ...)
++{
++  int __retval;
++  __builtin_va_list __local_argv; __builtin_va_start( __local_argv, __format );
++  __retval = __mingw_vsnwprintf( __stream, __n, __format, __local_argv );
++  __builtin_va_end( __local_argv );
++  return __retval;
++}
++
++int vsnwprintf (wchar_t *__stream, size_t __n, in wchar_t *__format, __builtin_va_list __local_argv)
++{
++  return __mingw_vsnwprintf( __stream, __n, __format, __local_argv );
++}
+diff --git a/libphobos/libdruntime/core/sys/windows/threadaux.d b/libphobos/libdruntime/core/sys/windows/threadaux.d
+index 1054b51..161e1ff 100644
+--- a/libphobos/libdruntime/core/sys/windows/threadaux.d
++++ b/libphobos/libdruntime/core/sys/windows/threadaux.d
+@@ -162,26 +162,46 @@ private:
+         }
+ 
+         // get linear address of TEB of current thread
+-        static void** getTEB() nothrow
++        static void** getTEB() 
+         {
+             version(Win32)
+             {
+-                asm
++                version( GNU_InlineAsm ) 
+                 {
+-                    naked;
+-                    mov EAX,FS:[0x18];
+-                    ret;
++                    void** teb;
++                    asm 
++                    { 
++                        "movl %%fs:0x18, %0;" : "=r" teb;
++                    }
++                    return teb;
+                 }
++                else
++                    asm
++                    {
++                        naked;
++                        mov EAX,FS:[0x18];
++                        ret;
++                    }
+             }
+             else version(Win64)
+             {
+-                asm
++                version(GNU_InlineAsm)
+                 {
+-                    naked;
+-                    mov RAX,0x30;
+-                    mov RAX,GS:[RAX]; // immediate value causes fixup
+-                    ret;
++                    void** teb;
++                    asm
++                    {
++                        "movq %%gs:0x30, %0;" : "=r" teb;					
++                    }
++                    return teb;
+                 }
++                else
++                    asm
++                    {
++                        naked;
++                        mov RAX,0x30;
++                        mov RAX,GS:[RAX]; // immediate value causes fixup
++                        ret;
++                    }
+             }
+             else
+             {
+diff --git a/libphobos/libdruntime/core/sys/windows/windows.d b/libphobos/libdruntime/core/sys/windows/windows.d
+index 25b4bb0..97621f3 100644
+--- a/libphobos/libdruntime/core/sys/windows/windows.d
++++ b/libphobos/libdruntime/core/sys/windows/windows.d
+@@ -497,6 +497,7 @@ BOOL   FindNextFileW(HANDLE hFindFile, WIN32_FIND_DATAW* lpFindFileData);
+ BOOL   GetExitCodeThread(HANDLE hThread, DWORD *lpExitCode);
+ BOOL   GetExitCodeProcess(HANDLE hProcess, DWORD *lpExitCode);
+ DWORD  GetLastError();
++void   SetLastError(DWORD dwErrCode);
+ DWORD  GetFileAttributesA(in char *lpFileName);
+ DWORD  GetFileAttributesW(in wchar *lpFileName);
+ BOOL   GetFileAttributesExA(LPCSTR, GET_FILEEX_INFO_LEVELS, PVOID);
+@@ -1580,12 +1581,6 @@ export BOOL SwitchToThread();
+ 
+ export
+ {
+-LONG InterlockedIncrement(LPLONG lpAddend);
+-LONG InterlockedDecrement(LPLONG lpAddend);
+-LONG InterlockedExchange(LPLONG Target, LONG Value);
+-LONG InterlockedExchangeAdd(LPLONG Addend, LONG Value);
+-LONG InterlockedCompareExchange(LONG *Destination, LONG Exchange, LONG Comperand);
+-
+ void InitializeCriticalSection(CRITICAL_SECTION * lpCriticalSection);
+ void EnterCriticalSection(CRITICAL_SECTION * lpCriticalSection);
+ BOOL TryEnterCriticalSection(CRITICAL_SECTION * lpCriticalSection);
+@@ -1594,8 +1589,27 @@ void DeleteCriticalSection(CRITICAL_SECTION * lpCriticalSection);
+ 
+ }
+ 
+-
+-
++// Interlocked functions are compiler intrinisics in 64-bit
++version( Win64 )
++{
++    LONG  InterlockedIncrement(LPLONG lpAddend);
++    LONG  InterlockedDecrement(LPLONG lpAddend);
++    LONG  InterlockedExchange(LPLONG Target, LONG Value);
++    LONG  InterlockedExchangeAdd(LPLONG Addend, LONG Value);
++    PVOID InterlockedCompareExchange(PVOID *Destination, PVOID Exchange, PVOID Comperand);
++}
++else
++{
++    export 
++    {
++        LONG  InterlockedIncrement(LPLONG lpAddend);
++        LONG  InterlockedDecrement(LPLONG lpAddend);
++        LONG  InterlockedExchange(LPLONG Target, LONG Value);
++        LONG  InterlockedExchangeAdd(LPLONG Addend, LONG Value);
++        PVOID InterlockedCompareExchange(PVOID *Destination, PVOID Exchange, PVOID Comperand);
++    }
++}
++	
+ export BOOL QueryPerformanceCounter(long* lpPerformanceCount);
+ export BOOL QueryPerformanceFrequency(long* lpFrequency);
+ 
+diff --git a/libphobos/libdruntime/core/thread.d b/libphobos/libdruntime/core/thread.d
+index 94aa17b..1cb6113 100644
+--- a/libphobos/libdruntime/core/thread.d
++++ b/libphobos/libdruntime/core/thread.d
+@@ -15,6 +15,7 @@ module core.thread;
+ public import core.time; // for Duration
+ import core.exception : onOutOfMemoryError;
+ static import rt.tlsgc;
++import core.stdc.stdio;
+ 
+ // this should be true for most architectures
+ version( GNU_StackGrowsDown )
+@@ -126,6 +127,55 @@ version( Windows )
+         extern (Windows) alias uint function(void*) btex_fptr;
+         extern (C) uintptr_t _beginthreadex(void*, uint, btex_fptr, void*, uint, uint*);
+ 
++        version( DigitalMars )
++        {
++            version (Win32)
++            {
++                // NOTE: The memory between the addresses of _tlsstart and _tlsend
++                //       is the storage for thread-local data in D 2.0.  Both of
++                //       these are defined in dm\src\win32\tlsseg.asm by DMC.
++                extern (C)
++                {
++                    extern int _tlsstart;
++                    extern int _tlsend;
++                }
++            }
++            version (Win64)
++            {
++                // NOTE: The memory between the addresses of _tls_start and _tls_end
++                //       is the storage for thread-local data in D 2.0.  Both of
++                //       these are defined in LIBCMT:tlssub.obj
++                extern (C)
++                {
++                    extern int _tls_start;
++                    extern int _tls_end;
++                }
++                alias _tls_start _tlsstart;
++                alias _tls_end   _tlsend;
++            }
++        }
++        else version( MinGW )
++        {
++            import gcc.builtins;
++        
++            // NOTE: The memory between the addresses of _tls_start and _tls_end
++            //       is the storage for thread-local data in MinGW.  Both of
++            //       these are defined in tlssup.c.
++            extern (C)
++            {
++                extern int _tls_start;
++                extern int _tls_end;
++            }
++            
++            alias _tls_start _tlsstart;
++            alias _tls_end _tlsend;
++        }        
++        else
++        {
++            __gshared int   _tlsstart;
++            alias _tlsstart _tlsend;
++        }
++
+         //
+         // Entry point for Windows threads
+         //
+@@ -226,10 +276,53 @@ else version( Posix )
+             extern (C) mach_port_t pthread_mach_thread_np(pthread_t);
+         }
+ 
+-        version( GNU )
++        version( DigitalMars )
++        {
++            version( linux )
++            {
++                extern (C)
++                {
++                    extern int _tlsstart;
++                    extern int _tlsend;
++                }
++            }
++            else version( OSX )
++            {
++                extern (C)
++                {
++                    __gshared void[][2] _tls_data_array;
++                }
++            }
++            else version( FreeBSD )
++            {
++                extern (C)
++                {
++                    extern void* _tlsstart;
++                    extern void* _tlsend;
++                }
++            }
++            else
++            {
++                __gshared int   _tlsstart;
++                alias _tlsstart _tlsend;
++            }
++        }
++        else version( MinGW)
++        {
++            // NOTE: The memory between the addresses of _tls_start and _tls_end
++            //       is the storage for thread-local data in MinGW.  Both of
++            //       these are defined in tlssup.c.
++            extern (C)
++            {
++                extern int _tls_start;
++                extern int _tls_end;
++            }
++            
++            alias _tls_start _tlsstart;
++            alias _tls_end _tlsend;
++        }
++        else version( GNU )
+         {
+-            import gcc.builtins;
+-
+             extern (C)
+             {
+                 extern size_t _tlsstart;
+@@ -2779,6 +2872,19 @@ private void* getStackBottom()
+                  mov RAX, GS:[RAX];
+                  ret;
+             }
++        else version( GNU_InlineAsm )
++        {
++            void *bottom;
++
++            version( X86 )
++                asm{ "movl %%fs:4, %0;" : "=r" bottom; }                
++            else version( X86_64 )
++                asm{ "movq %%gs:8, %0;" : "=r" bottom; }            
++            else
++                static assert( false, "Platform not supported.");
++
++            return bottom;
++        }                    
+         else
+             static assert(false, "Architecture not supported.");
+     }
+@@ -3039,6 +3145,24 @@ private
+             version = AlignFiberStackTo16Byte;
+         }
+     }
++    else version( GNU_InlineAsm )
++    {
++        version( MinGW )
++        {
++            version( X86_64 )
++            {
++                version = GNU_AsmX86_64_Windows;
++                version = AlignFiberStackTo16Byte;
++                version = AsmExternal;
++            }
++            else
++            {
++                version = GNU_AsmX86_Windows;
++                version = AlignFiberStackTo16Byte;
++                version = AsmExternal;
++            }
++        }
++    }	
+     else version( PPC )
+     {
+         version( Posix )
+@@ -3307,6 +3431,99 @@ private
+                 jmp RCX;
+             }
+         }
++        else version( GNU_AsmX86_Windows )
++        {
++			// This requires function prologue to be generated.
++			// However, gcc -O2 will avoid this making this unusable here.
++			static assert(false, "fiber_switchContext should be AsmExternal");
++            asm 
++            {   "
++                // save current stack state
++                // Standard prologue.  
++                //push %%EBP;
++                //mov  %%ESP, %%EBP;
++                push %%EDI;
++                push %%ESI;
++                push %%EBX;
++                push %%FS:0;
++                push %%FS:4;
++                push %%FS:8;
++                push %%EAX;
++
++                // store oldp again with more accurate address
++                mov 8(%%EBP), %%EAX;
++                mov %%ESP, (%%EAX);
++                // load newp to begin context switch
++                mov 12(%%EBP), %%ESP;
++
++                // load saved state from new stack
++                pop %%EAX;
++                pop %%FS:8;
++                pop %%FS:4;
++                pop %%FS:0;
++                pop %%EBX;
++                pop %%ESI;
++                pop %%EDI;
++                pop %%EBP;
++
++                // 'return' to complete switch
++                ret;
++                "
++                : /* outputs */
++                : /* inputs */
++                : /* clobbers */
++                ;
++            }
++        }
++        else version( GNU_AsmX86_64_Windows )
++        {
++			// This requires function prologue to be generated.
++			// However, gcc -O2 will avoid this making this unusable
++			// This makes this block unusuable.
++			static assert(false, "fiber_switchContext should be AsmExternal");
++            asm 
++            {   "
++                // save current stack state
++                // Standard prologue
++                //pushq %%RBP;
++                //movq  %%RSP, %%RBP;
++                pushq %%RBX;
++                pushq %%R12;
++                pushq %%R13;
++                pushq %%R14;
++                pushq %%R15;
++                pushq %%GS:0;
++                pushq %%GS:8;
++                pushq %%GS:16;
++
++                // store oldp
++                movq %%RSP, (%%RCX);
++                // load newp to begin context switch
++                movq %%RDX, %%RSP;
++
++                // load saved state from new stack
++                popq %%GS:16;
++                popq %%GS:8;
++                popq %%GS:0;
++                popq %%R15;
++                popq %%R14;
++                popq %%R13;
++                popq %%R12;
++                popq %%RBX;
++                popq %%RBP;
++
++                // 'return' to complete switch
++                popq %%RCX;
++                jmp *%%RCX;
++                "
++                : /* outputs */
++                : /* inputs */
++                : /* clobbers */ 
++                ;
++            }
++
++//            assert(false, "x86-64 stub");
++        }	
+         else static if( __traits( compiles, ucontext_t ) )
+         {
+             Fiber   cfib = Fiber.getThis();
+@@ -4266,6 +4483,46 @@ private:
+             pstack -= ABOVE;
+             *cast(size_t*)(pstack - SZ_RA) = cast(size_t)&fiber_entryPoint;
+         }
++        else version( GNU_AsmX86_Windows )
++        {
++            version( StackGrowsDown ) {} else static assert( false );
++
++            // Currently, MinGW doesn't utilize SEH exceptions.
++            // See DMD AsmX86_Windows If this code ever becomes fails and SEH is used.
++
++            push( 0x00000000 );                                     // Return address of fiber_entryPoint call
++            push( cast(size_t) &fiber_entryPoint );                 // EIP
++            push( 0x00000000 );                                     // EBP
++            push( 0x00000000 );                                     // EDI
++            push( 0x00000000 );                                     // ESI
++            push( 0x00000000 );                                     // EBX
++            push( 0xFFFFFFFF );                                     // FS:[0] - Current SEH frame
++            push( cast(size_t) m_ctxt.bstack );                     // FS:[4] - Top of stack
++            push( cast(size_t) m_ctxt.bstack - m_size );            // FS:[8] - Bottom of stack
++            push( 0x00000000 );                                     // EAX
++        }
++        else version( GNU_AsmX86_64_Windows )
++        {
++            push( 0x00000000_00000000 );                            // Return address of fiber_entryPoint call
++            push( cast(size_t) &fiber_entryPoint );                 // RIP
++            push( 0x00000000_00000000 );                            // RBP
++            push( 0x00000000_00000000 );                            // RBX
++            push( 0x00000000_00000000 );                            // R12
++            push( 0x00000000_00000000 );                            // R13
++            push( 0x00000000_00000000 );                            // R14
++            push( 0x00000000_00000000 );                            // R15
++            push( 0xFFFFFFFF_FFFFFFFF );                            // GS:[0] - Current SEH frame
++            version( StackGrowsDown )
++            {
++                push( cast(size_t) m_ctxt.bstack );                 // GS:[8]  - Top of stack
++                push( cast(size_t) m_ctxt.bstack - m_size );        // GS:[16] - Bottom of stack
++            }
++            else
++            {
++                push( cast(size_t) m_ctxt.bstack );                 // GS:[8]  - Top of stack
++                push( cast(size_t) m_ctxt.bstack + m_size );        // GS:[16] - Bottom of stack
++            }
++        }
+         else version( AsmARM_Posix )
+         {
+             /* We keep the FP registers and the return address below
+diff --git a/libphobos/libdruntime/gcc/gthreads/win32.d b/libphobos/libdruntime/gcc/gthreads/win32.d
+index 1912527..f25046a 100644
+--- a/libphobos/libdruntime/gcc/gthreads/win32.d
++++ b/libphobos/libdruntime/gcc/gthreads/win32.d
+@@ -161,9 +161,10 @@ void gthread_mutex_init(gthread_mutex_t* mutex)
+   InitializeCriticalSection(mutex);
+ }
+ 
+-void gthread_mutex_destroy(gthread_mutex_t* mutex)
++int gthread_mutex_destroy(gthread_mutex_t* mutex)
+ {
+   DeleteCriticalSection(mutex);
++  return 0;
+ }
+ 
+ int gthread_mutex_lock(gthread_mutex_t* mutex)
+diff --git a/libphobos/libdruntime/rt/dmain2.d b/libphobos/libdruntime/rt/dmain2.d
+index 4236e8a..5802425 100644
+--- a/libphobos/libdruntime/rt/dmain2.d
++++ b/libphobos/libdruntime/rt/dmain2.d
+@@ -279,7 +312,7 @@ extern (C) int _d_run_main(int argc, char **argv, MainFunc mainFunc)
+         }
+     }
+ 
+-    version (Win64)
++    version (Win64) version(D_InlineAsm_X86_64)
+     {
+         auto fp = __iob_func();
+         stdin = &fp[0];
+@@ -376,6 +409,12 @@ extern (C) int _d_run_main(int argc, char **argv, MainFunc mainFunc)
+     {
+         if (IsDebuggerPresent())
+             trapExceptions = false;
++        version (MinGW)
++        {
++            /* IsDebuggerPresent doesn't detect GDC.  Would be nice to have
++               some way of detecting valid console output */
++            trapExceptions = true;
++        }
+     }
+ 
+     void tryExec(scope void delegate() dg)
+diff --git a/libphobos/libdruntime/rt/memory.d b/libphobos/libdruntime/rt/memory.d
+index 324c6d9..e4fcceb 100644
+--- a/libphobos/libdruntime/rt/memory.d
++++ b/libphobos/libdruntime/rt/memory.d
+@@ -22,10 +22,24 @@ private
+         {
+             extern __gshared
+             {
+-                int _data_start__;
+-                int _data_end__;
+-                int _bss_start__;
+-                int _bss_end__;
++                // We need to alias __data_*__ and __bss_*__ to correct
++                // symbols on Win64.  Binutils exports the same symbol for
++                // both Win32 and Win64, where-as the ABI says no _ should be
++                // prefixed.
++                version( X86 ) 
++                {
++                    int _data_start__;
++                    int _data_end__;
++                    int _bss_start__;
++                    int _bss_end__;
++                } 
++                else version( X86_64 )
++                {
++                    pragma(mangle, "__data_start__") int _data_start__;
++                    pragma(mangle, "__data_end__") int _data_end__;
++                    pragma(mangle, "__bss_start__") int _bss_start__;
++                    pragma(mangle, "__bss_end__") int _bss_end__;
++                }
+             }
+         }
+     }
+diff --git a/libphobos/src/Makefile.am b/libphobos/src/Makefile.am
+index 6040a18..6a29d17 100644
+--- a/libphobos/src/Makefile.am
++++ b/libphobos/src/Makefile.am
+@@ -108,7 +108,7 @@ FREEBSD_OBJS=std/c/freebsd/socket.o
+ WINDOWS_OBJS=std/c/windows/com.o std/c/windows/stat.o std/c/wcharh.o \
+ 	     std/c/windows/windows.o std/c/windows/winsock.o \
+ 	     std/windows/charset.o std/windows/iunknown.o std/windows/registry.o \
+-	     std/windows/syserror.o std/__fileinit.o std/internal/windows/advapi32.o
++	     std/windows/syserror.o std/internal/windows/advapi32.o
+ 
+ D_EXTRA_OBJS=@D_EXTRA_OBJS@
+ 
+diff --git a/libphobos/src/Makefile.in b/libphobos/src/Makefile.in
+index 54ff5e8..f99b362 100644
+--- a/libphobos/src/Makefile.in
++++ b/libphobos/src/Makefile.in
+@@ -276,7 +276,7 @@ FREEBSD_OBJS = std/c/freebsd/socket.o
+ WINDOWS_OBJS = std/c/windows/com.o std/c/windows/stat.o std/c/wcharh.o \
+ 	     std/c/windows/windows.o std/c/windows/winsock.o \
+ 	     std/windows/charset.o std/windows/iunknown.o std/windows/registry.o \
+-	     std/windows/syserror.o std/__fileinit.o std/internal/windows/advapi32.o
++	     std/windows/syserror.o std/internal/windows/advapi32.o
+ 
+ ALL_PHOBOS_OBJS = $(D_EXTRA_OBJS) $(MAIN_OBJS) $(ZLIB_OBJS)
+ 
+diff --git a/libphobos/src/std/format.d b/libphobos/src/std/format.d
+index bdfd302..c96d727 100644
+--- a/libphobos/src/std/format.d
++++ b/libphobos/src/std/format.d
+@@ -5015,16 +5015,24 @@ void doFormat(void delegate(dchar) putc, TypeInfo[] arguments, va_list argptr)
+             //doFormat(putc, (&valti)[0 .. 1], p);
+             version (Win64)
+             {
+-                void* q = void;
++                version(MinGW)
++                {   __va_list va;
++                    va.stack_args = p;
++                    argptr = *cast(va_list*) &va;
++                }
++                else 
++                {
++                    void* q = void;
+ 
+-                if (tsize > 8 && m != Mangle.Tsarray)
+-                {   q = p;
+-                    argptr = &q;
++                    if (tsize > 8 && m != Mangle.Tsarray)
++                    {   q = p;
++                        argptr = *cast(va_list*)&q;
++                    }
++                    else
++                        argptr = *cast(va_list*)p;
++                    formatArg('s');
++                    p += tsize;
+                 }
+-                else
+-                argptr = p;
+-                formatArg('s');
+-                p += tsize;
+             }
+             else
+             {
+@@ -5084,13 +5092,21 @@ void doFormat(void delegate(dchar) putc, TypeInfo[] arguments, va_list argptr)
+                     argptr = cast(va_list) pkey;
+                 else version (Win64)
+                 {
+-                    void* q = void;
+-                    if (keysize > 8 && m != Mangle.Tsarray)
+-                    {   q = pkey;
+-                        argptr = &q;
++                    version(MinGW)
++                    {   __va_list va;
++                        va.stack_args = pkey;
++                        argptr = *cast(va_list*) &va;
++                    }
++                    else 
++                    {
++                        void* q = void;
++                        if (keysize > 8 && m != Mangle.Tsarray)
++                        {   q = pkey;
++                            argptr = *cast(va_list*)&q;
++                        }
++                        else
++                            argptr = pkey;
+                     }
+-                    else
+-                        argptr = pkey;
+                 }
+                 else version (X86_64)
+                 {   __va_list va;
+@@ -5111,14 +5127,22 @@ void doFormat(void delegate(dchar) putc, TypeInfo[] arguments, va_list argptr)
+                     argptr = cast(va_list) pvalue;
+                 else version (Win64)
+                 {
+-                    void* q2 = void;
+-                    auto valuesize = valti.tsize;
+-                    if (valuesize > 8 && m != Mangle.Tsarray)
+-                    {   q2 = pvalue;
+-                        argptr = &q2;
++                    version( MinGW )
++                    {   __va_list va2;
++                        va2.stack_args = pvalue;
++                        argptr = *cast(va_list*) &va2;
+                     }
+                     else
+-                        argptr = pvalue;
++                    {
++                        void* q2 = void;
++                        auto valuesize = valti.tsize;
++                        if (valuesize > 8 && m != Mangle.Tsarray)
++                        {   q2 = pvalue;
++                            argptr = &q2;
++                        }
++                        else
++                            argptr = pvalue;
++                    }
+                 }
+                 else version (X86_64)
+                 {   __va_list va2;
+diff --git a/libphobos/src/std/math.d b/libphobos/src/std/math.d
+index 58196bb..c59cee3 100644
+--- a/libphobos/src/std/math.d
++++ b/libphobos/src/std/math.d
+@@ -65,6 +65,11 @@
+  */
+ module std.math;
+ 
++// Win64 is used in conjunction with inline assembly.
++// MinGW doesn't support that.
++version(Win64) version(D_InlineAsm_X86_64) 
++	version = Win64_InlineAsm;
++
+ import core.stdc.math;
+ import std.range, std.traits;
+ 
+@@ -2184,7 +2189,7 @@ unittest
+  */
+ int ilogb(real x)  @trusted nothrow
+ {
+-    version (Win64)
++    version (Win64_InlineAsm)
+     {
+         asm
+         {
+@@ -2734,7 +2739,7 @@ unittest
+  */
+ real logb(real x) @trusted nothrow
+ {
+-    version (Win64)
++    version (Win64_InlineAsm)
+     {
+         asm
+         {
+@@ -2858,7 +2863,10 @@ real cbrt(real x) @trusted nothrow
+ {
+     version (Win64)
+     {
+-        return copysign(exp2(yl2x(fabs(x), 1.0L/3.0L)), x);
++        version(INLINE_YL2X)
++            return copysign(exp2(yl2x(fabs(x), 1.0L/3.0L)), x);
++        else
++            return core.stdc.math.cbrtl(x);
+     }
+     else
+         return core.stdc.math.cbrtl(x);
+@@ -2988,7 +2996,7 @@ unittest
+  */
+ real ceil(real x)  @trusted pure nothrow
+ {
+-    version (Win64)
++    version (Win64_InlineAsm)
+     {
+         asm
+         {
+@@ -3041,7 +3049,7 @@ unittest
+  */
+ real floor(real x) @trusted pure nothrow
+ {
+-    version (Win64)
++    version (Win64_InlineAsm)
+     {
+         asm
+         {
+@@ -3391,7 +3399,7 @@ version(Posix)
+  */
+ real trunc(real x) @trusted nothrow
+ {
+-    version (Win64)
++    version (Win64_InlineAsm)
+     {
+         asm
+         {
+diff --git a/libphobos/src/std/outbuffer.d b/libphobos/src/std/outbuffer.d
+index a17a70c..0d69d76 100644
+--- a/libphobos/src/std/outbuffer.d
++++ b/libphobos/src/std/outbuffer.d
+@@ -267,7 +267,19 @@ class OutBuffer
+         auto psize = buffer.length;
+         for (;;)
+         {
+-            version(Windows)
++            version(MinGW)
++            {
++                /* _vsnprintf defaults to msvcrt which is not comptable. */
++                count = vsnprintf(p,psize,f,args);
++                if (count == -1)
++                    psize *= 2;
++                else if (count >= psize)
++                    psize = count + 1;
++                else
++                    break;                    
++                p = cast(char *) alloca(psize); // buffer too small, try again with larger size            
++            } 
++            else version(Windows)
+             {
+                 count = _vsnprintf(p,psize,f,args);
+                 if (count != -1)
+diff --git a/libphobos/src/std/stdio.d b/libphobos/src/std/stdio.d
+index bc68743..4ce6026 100644
+--- a/libphobos/src/std/stdio.d
++++ b/libphobos/src/std/stdio.d
+@@ -120,10 +120,50 @@ else version (MINGW_IO)
+         int setmode(int, int);
+     }
+ 
+-    void flockfile(FILE* fp) { }
++    import core.sync.mutex;
++    
++    __gshared Mutex lockMutex;
++    __gshared Mutex[uint] fileLocks;
++    
++    void flockfile(FILE* fp)
++    {
++        Mutex mutex;
++        
++        if (lockMutex is null)
++             lockMutex = new Mutex;
++             
++        lockMutex.lock();
++        
++        if (fp._file in fileLocks)
++        {
++            mutex = fileLocks[fp._file];
++        } else 
++        {
++            mutex = new Mutex();
++            fileLocks[fp._file] = mutex;
++        }
++        mutex.lock();
++        
++        lockMutex.unlock();
++    }
++
++    void funlockfile(FILE* fp)
++    {
++        Mutex mutex;
+ 
+-    void funlockfile(FILE* fp) { }
++        if (lockMutex is null)
++            lockMutex = new Mutex;
++        lockMutex.lock();
+ 
++        if (fp._file in fileLocks)
++        {
++            mutex = fileLocks[fp._file];
++            mutex.unlock();
++        } 
++        else { /* Should this be an error */ }
++        lockMutex.unlock();
++    }
++   
+     int fputc_unlocked(int c, _iobuf* fp) { return fputc(c, cast(shared) fp); }
+     int fputwc_unlocked(int c, _iobuf* fp)
+     {
+diff --git a/libphobos/src/std/stream.d b/libphobos/src/std/stream.d
+index b1b44f9..7026f24 100644
+--- a/libphobos/src/std/stream.d
++++ b/libphobos/src/std/stream.d
+@@ -1142,7 +1142,16 @@ class Stream : InputStream, OutputStream {
+     size_t psize = buffer.length;
+     size_t count;
+     while (true) {
+-      version (Windows) {
++      version (MinGW) {
++        count = vsnprintf(p, psize, f, args);
++        if (count == -1)
++          psize *= 2;
++        else if (count >= psize)
++          psize = count + 1;
++        else
++          break;
++        p = cast(char*) alloca(psize);
++      } else version (Windows) {
+         count = _vsnprintf(p, psize, f, args);
+         if (count != -1)
+           break;
+diff --git a/setup-gcc.sh b/setup-gcc.sh
+index 214992f..87ba2b8 100755
+--- a/setup-gcc.sh
++++ b/setup-gcc.sh
+@@ -64,7 +64,7 @@ if test ! -f gcc/"$gcc_patch_fn"; then
+ fi
+ 
+ # 1. Remove d sources from d_gccsrc if already exist
+-test -h "$d_gccsrc/gcc/d" && rm "$d_gccsrc/gcc/d"
++test -h "$d_gccsrc/gcc/d" && rm -r "$d_gccsrc/gcc/d"
+ test -d "$d_gccsrc/libphobos" && rm -r "$d_gccsrc/libphobos"
+ if test -e "$d_gccsrc/gcc/d" -o -e "$d_gccsrc/libphobos"; then
+     echo "error: cannot update gcc source, please remove D sources by hand."

@@ -13,7 +13,7 @@ function printMsg
 # Which branch to build against
 GDC_BRANCH="gdc-4.8"
 # Force a GDC Revision.  Empty uses head.
-GDC_VERSION="021dda8feaba282fec60600729ba8abc2c64cf81"
+GDC_VERSION="ea7d8f6f2f07076347c936d810db3855be54405b"
 
 set -e
 
@@ -531,28 +531,9 @@ function build_gdc_host {
   download_gcc
 
   pushd GDC
-  applyPatch "$root/patches/gdc/0001-This-needs-splitting.patch"
-  applyPatch "$root/patches/gdc/0002-Separate-main-from-libgphobos.-Required-for-WinMain-.patch"
-  applyPatch "$root/patches/gdc/0003-MinGW-TLS-Support.patch"
-  applyPatch "$root/patches/gdc/0004-Separate-dmain-from-libgphobos.patch"
-  applyPatch "$root/patches/gdc/0005-Support-for-flockfile-funlockfile.patch"
-  applyPatch "$root/patches/gdc/0006-C99-stdio-support-for-libgphobos.patch"
-  applyPatch "$root/patches/gdc/0007-Add-static-assert-for-unsupported-platforms.patch"
-  applyPatch "$root/patches/gdc/0008-Possible-64-bit-issue-detectoin.patch"
-  applyPatch "$root/patches/gdc/0009-Add-WinSock2-dependency-to-phobos.patch"
-  applyPatch "$root/patches/gdc/0010-Mark-ModuleInfoZ-as-DLL_EXPORT-and-DLL_IMPORT.patch"
-  applyPatch "$root/patches/gdc/0011-DLLIMPORT-bugfix.-TLS-bugfix.patch"
-  applyPatch "$root/patches/gdc/0012-Phobos-COM-requires-libuuid.patch"
-  applyPatch "$root/patches/gdc/0013-Interlocked-cannot-be-export-in-64-bit-Windows.-They.patch"
-  applyPatch "$root/patches/gdc/0014-Make-ClassInfo-DLL_IMPORT-DLL_EXPORT.patch"
-  applyPatch "$root/patches/gdc/0015-Merge-with-other-TLS-commits.patch"
-  applyPatch "$root/patches/gdc/0016-ClassDeclaration-DLLIMPORT-DLLEXPORT-attributes.patch"
-  applyPatch "$root/patches/gdc/0017-alloca-is-declared-in-malloc.h.patch"
-  applyPatch "$root/patches/gdc/0018-insert_decl_attributes-renamed-insert_decl_attribute.patch"
-  applyPatch "$root/patches/gdc/0019-Mingw-doesn-t-prefix-strtold.patch"
-  applyPatch "$root/patches/gdc/0020-MinGW64-corrections.patch"
-  applyPatch "$root/patches/gdc/0021-Fixes-for-64-bit.patch"
-  applyPatch "$root/patches/gdc/0022-cbrt-invalid-use-of-yl2x-for-Win64-MinGW.patch"
+  applyPatch "$root/patches/gdc/Mingw-0001.patch"
+  #applyPatch "$root/patches/gdc/Mingw-0002.patch"
+  applyPatch "$root/patches/gdc/Mingw-0003.patch"
   ./setup-gcc.sh ../gcc-4.8.2
   popd
 

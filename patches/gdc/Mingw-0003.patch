@@ -1,14 +1,5 @@
-From e5f8bf6631cbc523597a1c414f4bf3468053ddc3 Mon Sep 17 00:00:00 2001
-From: Daniel Green <venix1@gmail.com>
-Date: Fri, 21 Jun 2013 17:35:10 -0500
-Subject: [PATCH 07/18] Add static assert for unsupported platforms
-
----
- libphobos/libdruntime/core/sync/condition.d | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
-
 diff --git a/libphobos/libdruntime/core/sync/condition.d b/libphobos/libdruntime/core/sync/condition.d
-index bb96989..8666427 100644
+index bd9fdbc..2abc8f3 100644
 --- a/libphobos/libdruntime/core/sync/condition.d
 +++ b/libphobos/libdruntime/core/sync/condition.d
 @@ -93,6 +93,10 @@ class Condition
@@ -83,11 +74,26 @@ index bb96989..8666427 100644
      }
 +    else
 +    {
-+		static assert(false, "Platform not supported");
++        static assert(false, "Platform not supported");
 +    }		
  }
  
  
--- 
-1.8.1.msysgit.1
-
+diff --git a/libphobos/libdruntime/core/sys/posix/sys/wait.d b/libphobos/libdruntime/core/sys/posix/sys/wait.d
+index b21eef4..63322ef 100644
+--- a/libphobos/libdruntime/core/sys/posix/sys/wait.d
++++ b/libphobos/libdruntime/core/sys/posix/sys/wait.d
+@@ -14,12 +14,12 @@
+  */
+ module core.sys.posix.sys.wait;
+ 
++version (Posix):
+ private import core.sys.posix.config;
+ public import core.sys.posix.sys.types; // for id_t, pid_t
+ public import core.sys.posix.signal;    // for siginfo_t (XSI)
+ //public import core.sys.posix.resource; // for rusage (XSI)
+ 
+-version (Posix):
+ extern (C):
+ 
+ //
