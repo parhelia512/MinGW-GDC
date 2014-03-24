@@ -538,6 +538,7 @@ function build_gdc_host {
   applyPatch "$root/patches/gdc/Mingw-0001.patch"
   #applyPatch "$root/patches/gdc/Mingw-0002.patch"
   applyPatch "$root/patches/gdc/Mingw-0003.patch"
+  applyPatch "$root/patches/gdc/Mingw-0004.patch"
   ./setup-gcc.sh ../gcc-4.8.2
   popd
 

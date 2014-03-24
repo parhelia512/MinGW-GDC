@@ -1,0 +1,28 @@
+diff --git a/gcc/d/d-spec.c b/gcc/d/d-spec.c
+index b571f29..721e53d 100644
+--- a/gcc/d/d-spec.c
++++ b/gcc/d/d-spec.c
+@@ -551,7 +551,7 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
+ 
+       if (saw_libuuid)
+     new_decoded_options[j++] = *saw_libuuid;
+-#if TARGET_WINDOWS
++#if TARGET_WINDOS
+     /* Phobos COM depend on libuuid.a */
+       else if (saw_libuuid && library > 0)
+     {
+@@ -617,12 +617,14 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
+ 
+   if (saw_time)
+     new_decoded_options[j++] = *saw_time;
++#if TARGET_WINDOS
+   else if (library > 0 && need_time)
+     {
+       generate_option (OPT_l, TIME_LIBRARY, 1, CL_DRIVER,
+ 		       &new_decoded_options[j++]);
+       added_libraries++;
+     }
++#endif
+ 
+   if (saw_libc)
+     new_decoded_options[j++] = *saw_libc;
