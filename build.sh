@@ -470,6 +470,8 @@ if [ ! -e cloog-0.18.0/build/.built ]; then
   cd ..
   touch .built
   popd
+
+  popd
 fi
 
 # Copy runtime files to release
