@@ -496,7 +496,7 @@ cp -Rp $CLOOG_STAGE/64/*     $GCC_PREFIX/x86_64-$vendor-mingw32
 function download_gdc {
 
   if [ ! -d "$CACHE/GDC" ]; then
-    git clone https://github.com/D-Programming-GDC/GDC.git "$CACHE/GDC" -b $GDC_BRANCH
+    git clone https://github.com/Ace17/GDC.git "$CACHE/GDC" -b $GDC_BRANCH
   fi
 
   rm -rf GDC
