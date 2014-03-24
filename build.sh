@@ -13,7 +13,7 @@ function printMsg
 # Which branch to build against
 GDC_BRANCH="gdc-4.8"
 # Force a GDC Revision.  Empty uses head.
-GDC_VERSION="ea7d8f6f2f07076347c936d810db3855be54405b"
+GDC_VERSION="4eea300cd85f1f675d09173bfb1bd9bb5bbea843"
 
 set -e
 
@@ -535,10 +535,6 @@ function build_gdc_host {
   download_gcc
 
   pushd GDC
-  applyPatch "$root/patches/gdc/Mingw-0001.patch"
-  #applyPatch "$root/patches/gdc/Mingw-0002.patch"
-  applyPatch "$root/patches/gdc/Mingw-0003.patch"
-  applyPatch "$root/patches/gdc/Mingw-0004.patch"
   ./setup-gcc.sh ../gcc-4.8.2
   popd
 
