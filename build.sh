@@ -580,9 +580,29 @@ function build_gdc_target {
   popd
 }
 
+function run_tests {
+  echo "dmd cloning"
+  if [ ! -d "dmd" ]; then
+    git clone https://github.com/D-Programming-Language/dmd.git -b 2.062
+  else
+    cd dmd
+    git reset --hard
+    git clean -f
+    git pull
+    # Reset RPO
+    cd ..
+  fi
+  pushd dmd/test
+  patch -p2 < $root/patches/mingw-testsuite.patch
+  $MAKE
+  popd
+}
+
 build_gdc_host
 build_runtime
 build_gdc_target
+
+run_tests
 
 trap - EXIT
 exit 0
@@ -596,11 +616,12 @@ else
   git pull
   cd ..
 fi
+
 pushd GDMD
 #Ok to fail. results in testsuite not running
-PATH=/c/strawberry/perl/bin:$PATH TMPDIR=. cmd /c "pp dmd-script -o gdmd.exe"
-cp gdmd.exe $CROSSDEV/gdc-4.8/release/bin/
-cp dmd-script $CROSSDEV/gdc-4.8/release/bin/gdmd
+#PATH=/c/strawberry/perl/bin:$PATH TMPDIR=. cmd /c "pp dmd-script -o gdmd.exe"
+#cp gdmd.exe $CROSSDEV/gdc-4.8/release/bin/
+#cp dmd-script $CROSSDEV/gdc-4.8/release/bin/gdmd
 popd
 
 # Test build
@@ -613,21 +634,4 @@ if [ ! "$gdmd" ]; then
   echo "Unable to run DMD testsuite. gdmd.exe failed to compile"
   exit 1
 fi
-
-# Run testsuite via dmd
-echo "dmd cloning"
-if [ ! -d "dmd" ]; then
-  git clone https://github.com/D-Programming-Language/dmd.git -b 2.062
-else
-  cd dmd
-  git reset --hard
-  git clean -f
-  git pull
-  # Reset RPO
-  cd ..
-fi
-pushd dmd/test
-patch -p2 < $root/patches/mingw-testsuite.patch
-$MAKE
-pushd
 
