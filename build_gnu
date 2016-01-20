@@ -64,17 +64,9 @@ function main
   lazy mingw64_build
   lazy gcc_build
 
-  lazy install_gcc
+  lazy gcc_install
 
   echo Done
-}
-
-function install_gcc
-{
-  lazy build_gcc
-
-	echo "Finishing installing gcc (phase2)"
-	$MAKE install -C "$GCC_BIN"
 }
 
 #-------------------------------------------------------------------------------
@@ -174,7 +166,7 @@ function gcc_extract
 
 function gcc_patch
 {
-  patch -p1 --merge -d $GCC_SRC < $scriptDir/patches/0001-Remove-fPIC-for-MinGW.patch
+  patch -p1 --merge -d $GCC_SRC < $scriptDir/patches/gcc/0001-Remove-fPIC-for-MinGW.patch
 }
 
 function gcc_configure
@@ -216,6 +208,11 @@ function gcc_standalone_install
 function gcc_build
 {
   $MAKE all -C "$GCC_BIN"
+}
+
+function gcc_install
+{
+	$MAKE install -C "$GCC_BIN"
 }
 
 #------------------------------------------------------------------------------
