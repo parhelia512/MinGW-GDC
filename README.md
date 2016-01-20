@@ -8,32 +8,33 @@ MinGW-GDC
 =========
 
  * Lastest working:
-   * D2.062 GCC 4.8.0
+   * D2.066 GCC 5.3.0
 
 This is a script for building a GCC+GDC compiler targetting MS Windows.
 The script can be run:
-- from Windows, using MinGW's MSYS2 environment.
+- from MS Windows, using MinGW's MSYS2 environment.
 - from GNU/Linux (Tested under Debian).
 
-The built compiler runs under the system it was built from.
+The resulting compiler will run under the system it was built from.
+In one word, you will get a native compiler, targetting MS Windows.
 The script handles all dependencies (automatic download).
 
 Building
 --------
 
-* If building for MS Windows, install MSYS2 [[http://mingw.org]]
+* If building from MS Windows, you will need MSYS2 [[http://mingw.org]]
 
 * Download the latest MinGW-GDC head
 
   $ git clone https://github.com/Ace17/MinGW-GDC.git
 
-* Enter directory and run
+* Enter an output directory (e.g: /tmp/gdc-build ) and from it, run
 
-  $ ./build.sh /path/to/output/directory
+  $ /path/to/MinGW-GDC/build_gnu
 
-  To enable parallel builds, type instead:
-  $ MAKE='make -j8' ./build.sh /path/to/output/directory
-
+The script keeps track of what has already been done. In case of an interruption,
+you may just run it again from the same directory: the build will resume where
+it was left.
 
 Common Issues
 -------------
@@ -44,7 +45,7 @@ Common Issues
 
 * I have found that from MS Windows, parallel builds may sometimes fail. Under
   Debian I have had no issues building with 8 cores. Please note that some parts
-  of the build will still be run sequentially, like downloads and some 
+  of the build will still be run sequentially, like downloads and some
   subdirectories of binutils/gcc.
 
 How it works internally
@@ -58,19 +59,15 @@ following steps:
   Technically, binutils isn't a GCC dependency, but the build process will need
   it later.
 
-* Build GCC dependencies:
-  * GMP
-  * MPFR
-  * MPC
-  * CLOOG
-  * ISL
+* Download GCC dependencies:
+  This is done by simply calling the dependency download script provided by gcc.
 
 * Build GCC: host part.
   This step will is achieved by running:
   $ make all-host
   A working compiler will be created. This compiler will enable to create ".o"
   files for the target. But at this stage you won't be able to link a full
-  program, because the runtime libraries (crt1.o) are not built yet.
+  executable program, because the runtime libraries (crt1.o) are not built yet.
   And you can't build the runtime libraries without the Win32 API libraries,
   which are not available yet at this point.
 
