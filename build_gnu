@@ -65,16 +65,6 @@ function main
 
   lazy gcc_install
 
-  export PATH="$PREFIX/bin:$PATH"
-  export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
-
-  lazy sdl_install
-  lazy mikmod_install
-  #lazy sdlmixer_install
-  #lazy zlib_install
-  lazy sdlimage_install
-
-  trap - EXIT
   echo Done
 }
 
@@ -254,67 +244,8 @@ function extract_to
 }
 
 #------------------------------------------------------------------------------
-# SDL
+# Generic stuff
 #------------------------------------------------------------------------------
-function sdl_install
-{
-  wget http://libsdl.org/release/SDL-1.2.15.tar.gz -O $ARCHIVES/sdl.tar.gz
-  extract_to "$ARCHIVES/sdl.tar.gz" src/sdl
-  mkdir -p bin/sdl
-  pushd bin/sdl
-  ../../src/sdl/configure \
-    --host=$TARGET \
-    --prefix=$PREFIX
-  $MAKE
-  $MAKE install
-  popd
-}
-
-function mikmod_install
-{
-  wget http://downloads.sourceforge.net/project/mikmod/libmikmod/3.3.8/libmikmod-3.3.8.tar.gz -O $ARCHIVES/libmikmod.tar.gz
-  extract_to "$ARCHIVES/libmikmod.tar.gz" src/mikmod
-  mkdir -p bin/mikmod
-  pushd bin/mikmod
-  ../../src/mikmod/configure \
-    --host=$TARGET \
-    --prefix=$PREFIX
-  $MAKE
-  $MAKE install
-  popd
-}
-
-function sdlmixer_install
-{
-  wget https://www.libsdl.org/projects/SDL_mixer/release/SDL_mixer-1.2.12.tar.gz -O $ARCHIVES/sdlmixer.tar.gz
-  extract_to "$ARCHIVES/sdlmixer.tar.gz" src/sdlmixer
-  mkdir -p bin/sdlmixer
-  pushd bin/sdlmixer
-  ../../src/sdlmixer/configure \
-    --disable-sdltest \
-    --disable-esdtest \
-    --disable-smpegtest \
-    --disable-music-cmd \
-    --host=$TARGET \
-    --prefix=$PREFIX
-  $MAKE
-  $MAKE install
-  popd
-}
-
-function sdlimage_install
-{
-  wget https://www.libsdl.org/projects/SDL_image/release/SDL_image-1.2.12.tar.gz -O $ARCHIVES/sdlimage.tar.gz
-  extract_to "$ARCHIVES/sdlimage.tar.gz" src/sdlimage
-  mkdir -p bin/sdlimage
-  pushd bin/sdlimage
-  ../../src/sdlimage/configure \
-    --host=$TARGET \
-    --prefix=$PREFIX
-  $MAKE
-  $MAKE install
-  popd
-}
 
 function lazy
 {
