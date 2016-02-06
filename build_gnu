@@ -36,6 +36,7 @@ readonly scriptDir=$(realpath $(dirname $0))
 unset CC
 unset CXX
 readonly MAKE="make -j8 -k"
+export LDFLAGS=-s
 
 function main
 {
