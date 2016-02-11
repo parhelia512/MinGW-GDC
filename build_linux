@@ -6,7 +6,7 @@ set -euo pipefail
 #
 # Mingw GCC build script
 # Author: Sebastien Alaiwan, largely inspired by the one made by venix
-# Date: 2013-09-29
+# Date: 2016-02-11
 #
 # The basic steps are:
 # 0) Download and extract all the required packages
@@ -14,12 +14,11 @@ set -euo pipefail
 # 2) install the binutils: make install
 # 3) build the core-gcc, configure with --target=$(TARGET), make all-gcc
 # 4) install the core-gcc: make install-gcc
-# 5) build the mingw runtime (libc) using the core-gcc
+# 5) build the GNU libc runtime (libc) using the core-gcc
 # 6) finish building gcc: go back to the core-gcc build directory and run "make"
 # 7) install gcc: make install
 #-------------------------------------------------------------------------------
-#readonly TARGET=x86_64-w64-mingw32
-readonly TARGET=i686-ace-mingw32
+readonly TARGET=x86_64-linux-gnu
 readonly PREFIX=/tmp/gdc-release
 
 readonly SERVER_URL=http://ftp.gnu.org/gnu
@@ -46,13 +45,11 @@ function main
   lazy binutils_download
   lazy binutils_build
 
-  lazy mingw64_download
-  lazy mingw64_extract
-  lazy mingw64_install_headers
+  lazy glibc_download
+  lazy glibc_install_headers
 
   lazy gcc_download
   lazy gcc_extract
-  lazy gcc_patch
 
   lazy gdc_download
   lazy gdc_apply
@@ -61,7 +58,7 @@ function main
   lazy gcc_standalone_build
   lazy gcc_standalone_install
 
-  lazy mingw64_build
+  lazy glibc_build_2
 
   lazy gcc_build
   lazy gcc_install
@@ -100,48 +97,31 @@ function binutils_build
 }
 
 #-------------------------------------------------------------------------------
-# MINGW 64 (LIBC)
+# GLIBC
 #-------------------------------------------------------------------------------
-MINGW64_SRC=src/mingw64
-MINGW64_BIN=bin/mingw64
 
-function mingw64_download
+function glibc_download
 {
-	wget "http://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2" -O "$ARCHIVES/mingw64.tar.bz2"
+  wget "http://ftp.gnu.org/gnu/glibc/glibc-2.22.tar.xz" -O "$ARCHIVES/glibc.tar.xz"
 }
 
-function mingw64_extract
+function glibc_install_headers
 {
-  extract_to $ARCHIVES/mingw64.tar.bz2 $MINGW64_SRC
-}
+  extract_to $ARCHIVES/glibc.tar.xz src/glibc
+  mkdir -p bin/glibc
 
-function mingw64_install_headers # "sys-include"
-{
-  rm -rf "bin/mingw64-headers"
-  mkdir -p "bin/mingw64-headers"
-  local dir=$(realpath $MINGW64_SRC)
-
-  pushd bin/mingw64-headers
-  $dir/mingw-w64-headers/configure --host=$TARGET --prefix="$PREFIX/$TARGET"
+  pushd bin/glibc
+  ../../src/glibc/configure --prefix=$PREFIX/$TARGET --host=$TARGET --target=$TARGET #--with-headers=$PREFIX/$TARGET/include
   popd
 
-  $MAKE -C bin/mingw64-headers
-  $MAKE -C bin/mingw64-headers install
+  #$MAKE -C bin/glibc
+  $MAKE -C bin/glibc install-headers
 }
 
-function mingw64_build
+function glibc_build_2
 {
-  rm -rf "$MINGW64_BIN"
-  mkdir -p "$MINGW64_BIN"
-
-  local dir=$(realpath $MINGW64_SRC)
-
-  pushd "$MINGW64_BIN"
-  $dir/configure --host=$TARGET --prefix="$PREFIX/$TARGET" PATH="$PREFIX/bin:$PATH"
-  popd
-
-  $MAKE -C "$MINGW64_BIN" PATH="$PREFIX/bin:$PATH"
-  $MAKE -C "$MINGW64_BIN" install PATH="$PREFIX/bin:$PATH"
+  $MAKE -C bin/glibc
+  $MAKE -C bin/glibc install
 }
 
 ##-------------------------------------------------------------------------------
@@ -164,11 +144,6 @@ function gcc_extract
   popd
 }
 
-function gcc_patch
-{
-  patch -p1 --merge -d $GCC_SRC < $scriptDir/patches/gcc/0001-Remove-fPIC-for-MinGW.patch
-}
-
 function gcc_configure
 {
   local dir=../../$GCC_SRC # 'dir' must be a relative path, otherwise GMP will not build under Msy2/Cygwin
@@ -177,7 +152,6 @@ function gcc_configure
   $dir/configure \
     -v \
     --disable-bootstrap \
-     --without-headers \
      --enable-targets=all \
      --prefix="$PREFIX" \
      --target="$TARGET" \
