@@ -18,25 +18,11 @@ set -euo pipefail
 # 6) finish building gcc: go back to the core-gcc build directory and run "make"
 # 7) install gcc: make install
 #-------------------------------------------------------------------------------
-#readonly TARGET=x86_64-w64-mingw32
 readonly TARGET=i686-ace-mingw32
-readonly PREFIX=/tmp/gdc-release
-
-readonly SERVER_URL=http://ftp.gnu.org/gnu
-readonly GCC_VERSION=5.3.0
-readonly BINUTILS_VERSION=2.25
-
-readonly GCC_LANGS="c,c++,d"
-
-readonly BIN=bin
-readonly ARCHIVES=archives
+readonly PREFIX=/tmp/gdc-release-w32
 
 readonly scriptDir=$(realpath $(dirname $0))
-
-unset CC
-unset CXX
-readonly MAKE="make -j`nproc` -k"
-export LDFLAGS=-s
+source $scriptDir/base
 
 function main
 {
