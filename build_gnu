@@ -63,17 +63,17 @@ readonly BINUTILS_BIN=bin/binutils
 
 function binutils_download
 {
-	wget "$SERVER_URL/binutils/binutils-$BINUTILS_VERSION.tar.bz2" -O "$ARCHIVES/binutils.tar.bz2"
+  wget "$SERVER_URL/binutils/binutils-$BINUTILS_VERSION.tar.bz2" -O "$ARCHIVES/binutils.tar.bz2"
 }
 
 function binutils_build
 {
   extract_to "$ARCHIVES/binutils.tar.bz2" $BINUTILS_SRC
 
-	rm -rf "$BINUTILS_BIN"
-	mkdir -p "$BINUTILS_BIN"
+  rm -rf "$BINUTILS_BIN"
+  mkdir -p "$BINUTILS_BIN"
   readonly DIR=$(realpath $BINUTILS_SRC)
-	pushd "$BINUTILS_BIN"
+  pushd "$BINUTILS_BIN"
   $DIR/configure \
     --prefix="$PREFIX" \
     --target=$TARGET \
@@ -81,8 +81,8 @@ function binutils_build
     --disable-shared 2>&1 >/dev/null
   popd
 
-	$MAKE -C "$BINUTILS_BIN" CFLAGS="-O2 -fno-exceptions" LDFLAGS="-s"
-	$MAKE -C "$BINUTILS_BIN" install
+  $MAKE -C "$BINUTILS_BIN" CFLAGS="-O2 -fno-exceptions" LDFLAGS="-s"
+  $MAKE -C "$BINUTILS_BIN" install
 }
 
 #-------------------------------------------------------------------------------
@@ -93,7 +93,7 @@ MINGW64_BIN=bin/mingw64
 
 function mingw64_download
 {
-	wget "http://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2" -O "$ARCHIVES/mingw64.tar.bz2"
+  wget "http://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2" -O "$ARCHIVES/mingw64.tar.bz2"
 }
 
 function mingw64_extract
@@ -199,7 +199,7 @@ function gcc_build
 
 function gcc_install
 {
-	$MAKE install -C "$GCC_BIN"
+  $MAKE install -C "$GCC_BIN"
 }
 
 #------------------------------------------------------------------------------
@@ -216,7 +216,7 @@ function gdc_download
 
 function gdc_apply
 {
-	pushd src/gdc
+  pushd src/gdc
   ./setup-gcc.sh ../gcc
   popd
 }
