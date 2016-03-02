@@ -22,7 +22,7 @@ readonly TARGET=i686-ace-mingw32
 readonly PREFIX=/tmp/gdc-release-w32
 
 readonly scriptDir=$(realpath $(dirname $0))
-source $scriptDir/base
+source $scriptDir/base.sh
 
 function main
 {
