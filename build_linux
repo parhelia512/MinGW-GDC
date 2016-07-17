@@ -20,7 +20,7 @@ set -euo pipefail
 # 6) finish building gcc: go back to the core-gcc build directory and run "make"
 # 7) install gcc: make install
 #-------------------------------------------------------------------------------
-readonly TARGET=x86_64-linux-gnu
+readonly TARGET=x86_64-ace-linux-gnu
 readonly PREFIX=/tmp/gdc-release
 
 readonly scriptDir=$(realpath $(dirname $0))
@@ -63,7 +63,7 @@ readonly BINUTILS_BIN=bin/binutils
 
 function binutils_download
 {
-  wget "$SERVER_URL/binutils/binutils-$BINUTILS_VERSION.tar.bz2" -O "$ARCHIVES/binutils.tar.bz2"
+  lazy_download "$ARCHIVES/binutils.tar.bz2" "$SERVER_URL/binutils/binutils-$BINUTILS_VERSION.tar.bz2"
 }
 
 function binutils_build
@@ -91,7 +91,7 @@ function binutils_build
 
 function glibc_download
 {
-  wget "http://ftp.gnu.org/gnu/glibc/glibc-2.22.tar.xz" -O "$ARCHIVES/glibc.tar.xz"
+  lazy_download "$ARCHIVES/glibc.tar.xz" "http://ftp.gnu.org/gnu/glibc/glibc-2.22.tar.xz"
 }
 
 function glibc_install_headers
@@ -121,7 +121,7 @@ readonly GCC_BIN=bin/gcc
 
 function gcc_download
 {
-  wget "$SERVER_URL/gcc/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2" -O $ARCHIVES/gcc.tar.bz2
+  lazy_download $ARCHIVES/gcc.tar.bz2 "$SERVER_URL/gcc/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2" 
 }
 
 function gcc_extract

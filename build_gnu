@@ -65,7 +65,7 @@ readonly BINUTILS_BIN=bin/binutils
 
 function binutils_download
 {
-  wget "$SERVER_URL/binutils/binutils-$BINUTILS_VERSION.tar.bz2" -O "$ARCHIVES/binutils.tar.bz2"
+  lazy_download "$ARCHIVES/binutils.tar.bz2" "$SERVER_URL/binutils/binutils-$BINUTILS_VERSION.tar.bz2"
 }
 
 function binutils_build
@@ -95,7 +95,7 @@ MINGW64_BIN=bin/mingw64
 
 function mingw64_download
 {
-  wget "http://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2" -O "$ARCHIVES/mingw64.tar.bz2"
+  lazy_download "$ARCHIVES/mingw64.tar.bz2" "http://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v3.0.0.tar.bz2"
 }
 
 function mingw64_extract
@@ -140,7 +140,7 @@ readonly GCC_BIN=bin/gcc
 
 function gcc_download
 {
-  wget "$SERVER_URL/gcc/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2" -O $ARCHIVES/gcc.tar.bz2
+  lazy_download $ARCHIVES/gcc.tar.bz2 "$SERVER_URL/gcc/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2" 
 }
 
 function gcc_extract

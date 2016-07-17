@@ -5,11 +5,14 @@ readonly BINUTILS_VERSION=2.26
 
 readonly GCC_LANGS="c,c++,d"
 
-readonly BIN=bin
-readonly ARCHIVES=archives
+readonly BIN=$PWD/bin
+readonly ARCHIVES=/tmp/archives
 
+# Sanitize environment.
+# Things like CC="ccache gcc" don't work with cross-build tools
 unset CC
 unset CXX
+
 readonly MAKE="make -j`nproc` -k"
 export LDFLAGS=-s
 
@@ -38,5 +41,16 @@ function lazy
 
   mkdir -p $BIN/flags
   touch $BIN/flags/$func
+}
+
+function lazy_download
+{
+  local file="$1"
+  local url="$2"
+
+  if [ ! -e "$file" ]; then
+    wget "$url" -c -O "${file}.tmp"
+    mv "${file}.tmp" "$file"
+  fi
 }
 
