@@ -4,9 +4,11 @@ set -euo pipefail
 
 #-------------------------------------------------------------------------------
 #
-# Mingw GCC build script
+# GDC build script
+# Target: x86_64-linux-gnu
+# Host: native
 # Author: Sebastien Alaiwan, largely inspired by the one made by venix
-# Date: 2016-02-11
+# Date: 2016-07-17
 #
 # The basic steps are:
 # 0) Download and extract all the required packages
@@ -19,7 +21,7 @@ set -euo pipefail
 # 7) install gcc: make install
 #-------------------------------------------------------------------------------
 readonly TARGET=x86_64-linux-gnu
-readonly PREFIX=/tmp/gdc-release-x64
+readonly PREFIX=/tmp/gdc-release
 
 readonly scriptDir=$(realpath $(dirname $0))
 source $scriptDir/base.sh
@@ -61,17 +63,17 @@ readonly BINUTILS_BIN=bin/binutils
 
 function binutils_download
 {
-	wget "$SERVER_URL/binutils/binutils-$BINUTILS_VERSION.tar.bz2" -O "$ARCHIVES/binutils.tar.bz2"
+  wget "$SERVER_URL/binutils/binutils-$BINUTILS_VERSION.tar.bz2" -O "$ARCHIVES/binutils.tar.bz2"
 }
 
 function binutils_build
 {
   extract_to "$ARCHIVES/binutils.tar.bz2" $BINUTILS_SRC
 
-	rm -rf "$BINUTILS_BIN"
-	mkdir -p "$BINUTILS_BIN"
+  rm -rf "$BINUTILS_BIN"
+  mkdir -p "$BINUTILS_BIN"
   readonly DIR=$(realpath $BINUTILS_SRC)
-	pushd "$BINUTILS_BIN"
+  pushd "$BINUTILS_BIN"
   $DIR/configure \
     --prefix="$PREFIX" \
     --target=$TARGET \
@@ -79,8 +81,8 @@ function binutils_build
     --disable-shared 2>&1 >/dev/null
   popd
 
-	$MAKE -C "$BINUTILS_BIN" CFLAGS="-O2 -fno-exceptions" LDFLAGS="-s"
-	$MAKE -C "$BINUTILS_BIN" install
+  $MAKE -C "$BINUTILS_BIN" CFLAGS="-O2 -fno-exceptions" LDFLAGS="-s"
+  $MAKE -C "$BINUTILS_BIN" install
 }
 
 #-------------------------------------------------------------------------------
@@ -174,7 +176,7 @@ function gcc_build
 
 function gcc_install
 {
-	$MAKE install -C "$GCC_BIN"
+  $MAKE install -C "$GCC_BIN"
 }
 
 #------------------------------------------------------------------------------
@@ -191,7 +193,7 @@ function gdc_download
 
 function gdc_apply
 {
-	pushd src/gdc
+  pushd src/gdc
   ./setup-gcc.sh ../gcc
   popd
 }

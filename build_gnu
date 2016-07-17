@@ -4,9 +4,11 @@ set -euo pipefail
 
 #-------------------------------------------------------------------------------
 #
-# Mingw GCC build script
+# GDC build script
+# Target: i686-ace-mingw32
+# Host: native
 # Author: Sebastien Alaiwan, largely inspired by the one made by venix
-# Date: 2013-09-29
+# Date: 2016-07-17
 #
 # The basic steps are:
 # 0) Download and extract all the required packages
@@ -19,7 +21,7 @@ set -euo pipefail
 # 7) install gcc: make install
 #-------------------------------------------------------------------------------
 readonly TARGET=i686-ace-mingw32
-readonly PREFIX=/tmp/gdc-release-w32
+readonly PREFIX=/tmp/gdc-release
 
 readonly scriptDir=$(realpath $(dirname $0))
 source $scriptDir/base.sh
@@ -86,7 +88,7 @@ function binutils_build
 }
 
 #-------------------------------------------------------------------------------
-# MINGW 64 (LIBC)
+# MINGW 64
 #-------------------------------------------------------------------------------
 MINGW64_SRC=src/mingw64
 MINGW64_BIN=bin/mingw64
