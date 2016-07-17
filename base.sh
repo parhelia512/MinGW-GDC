@@ -1,7 +1,7 @@
 
 readonly SERVER_URL=http://ftp.gnu.org/gnu
-readonly GCC_VERSION=5.3.0
-readonly BINUTILS_VERSION=2.25
+readonly GCC_VERSION=5.4.0
+readonly BINUTILS_VERSION=2.26
 
 readonly GCC_LANGS="c,c++,d"
 
